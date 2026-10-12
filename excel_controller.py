@@ -1,0 +1,1405 @@
+"""Microsoft Excel COM Automation Controller for Windows.
+Provides real-time, live visual control of Microsoft Excel desktop via Windows COM.
+"""
+
+import os
+import sys
+import time
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+if sys.platform == "win32":
+    import pythoncom
+    import win32com.client
+    import win32gui
+else:
+    win32com = None
+    win32gui = None
+
+# Excel Chart Type Constants
+XL_CHART_TYPES = {
+    "column": 51,        # xlColumnClustered
+    "column_stacked": 52,# xlColumnStacked
+    "bar": 57,           # xlBarClustered
+    "bar_stacked": 58,   # xlBarStacked
+    "line": 4,           # xlLine
+    "line_markers": 65,  # xlLineMarkers
+    "pie": 5,            # xlPie
+    "doughnut": -4120,   # xlDoughnut
+    "area": 1,           # xlArea
+    "scatter": -4169,    # xlXYScatter
+}
+
+# Alignment Constants
+XL_H_ALIGN = {
+    "left": -4131,       # xlLeft
+    "center": -4108,     # xlCenter
+    "right": -4152,      # xlRight
+    "justify": -4130,    # xlJustify
+}
+
+XL_V_ALIGN = {
+    "top": -4160,        # xlTop
+    "center": -4108,     # xlCenter
+    "bottom": -4107,     # xlBottom
+}
+
+# Border Constants
+XL_BORDER_STYLES = {
+    "thin": (1, 2),      # xlContinuous, xlThin
+    "medium": (1, -4138),# xlContinuous, xlMedium
+    "thick": (1, 4),     # xlContinuous, xlThick
+    "double": (-4119, 2),# xlDouble, xlThin
+    "none": (-4142, 2),  # xlLineStyleNone
+}
+
+
+def hex_to_bgr_int(hex_str: str) -> int:
+    """Converts a hex color string (#RRGGBB or #RGB) to COM BGR integer."""
+    hex_str = hex_str.strip().lstrip("#")
+    if len(hex_str) == 3:
+        hex_str = "".join([c * 2 for c in hex_str])
+    if len(hex_str) != 6:
+        return 0
+    r = int(hex_str[0:2], 16)
+    g = int(hex_str[2:4], 16)
+    b = int(hex_str[4:6], 16)
+    # Excel COM color is BGR integer: R + (G * 256) + (B * 65536)
+    return r + (g * 256) + (b * 65536)
+
+
+class ExcelController:
+    """Manages live visual interaction with Microsoft Excel desktop on Windows."""
+
+    def __init__(self):
+        self._app = None
+        self._wb = None
+
+    def get_app(self, bring_to_front: bool = True):
+        """Connect to running Excel or launch a new visible instance."""
+        if sys.platform != "win32":
+            raise RuntimeError("Excel COM controller is only supported on Windows.")
+
+        pythoncom.CoInitialize()
+
+        try:
+            self._app = win32com.client.GetActiveObject("Excel.Application")
+        except Exception:
+            self._app = win32com.client.Dispatch("Excel.Application")
+
+        self._app.Visible = True
+        self._app.DisplayAlerts = False
+
+        try:
+            self._app.WindowState = -4137  # xlMaximized
+        except Exception:
+            pass
+
+        if bring_to_front:
+            self.focus_window()
+
+        return self._app
+
+    def focus_window(self):
+        """Bring Microsoft Excel window to foreground."""
+        try:
+            if win32gui:
+                hwnd = win32gui.FindWindow("XLMAIN", None)
+                if hwnd:
+                    win32gui.ShowWindow(hwnd, 3)  # SW_MAXIMIZE
+                    win32gui.SetForegroundWindow(hwnd)
+        except Exception:
+            pass
+
+    def get_workbook(self, create_if_none: bool = True):
+        """Get the current active workbook, or create one if none is open."""
+        app = self.get_app()
+        try:
+            if app.Workbooks.Count > 0:
+                self._wb = app.ActiveWorkbook
+                return self._wb
+        except Exception:
+            pass
+
+        if create_if_none:
+            self._wb = app.Workbooks.Add()
+            return self._wb
+        raise RuntimeError("No workbook is currently open in Microsoft Excel.")
+
+    def get_sheet(self, sheet_name: Optional[str] = None):
+        """Get a specific worksheet by name or the active sheet."""
+        wb = self.get_workbook()
+        if sheet_name:
+            try:
+                return wb.Worksheets(sheet_name)
+            except Exception:
+                raise ValueError(f"Sheet '{sheet_name}' not found in active workbook.")
+        return wb.ActiveSheet
+
+    # ── SYSTEM / WORKBOOK MANAGEMENT ──────────────────────────────────────────
+
+    def get_info(self) -> Dict[str, Any]:
+        """Return running status and active workbook information."""
+        try:
+            app = self.get_app(bring_to_front=False)
+            wb_count = app.Workbooks.Count
+            if wb_count == 0:
+                return {
+                    "running": True,
+                    "workbooks_open": 0,
+                    "active_workbook": None,
+                    "sheets": [],
+                    "status": "Excel is running with no open workbooks."
+                }
+
+            wb = app.ActiveWorkbook
+            sheet = wb.ActiveSheet
+            sheets = [s.Name for s in wb.Worksheets]
+
+            used_range = ""
+            try:
+                ur = sheet.UsedRange
+                used_range = ur.Address
+            except Exception:
+                pass
+
+            return {
+                "running": True,
+                "workbooks_open": wb_count,
+                "active_workbook": wb.Name,
+                "active_sheet": sheet.Name,
+                "sheets": sheets,
+                "active_cell": app.ActiveCell.Address if app.ActiveCell else None,
+                "used_range": used_range,
+                "status": "Connected to active Excel session."
+            }
+        except Exception as e:
+            return {
+                "running": False,
+                "error": str(e),
+                "status": "Microsoft Excel is not running or unreachable."
+            }
+
+    def new_workbook(self, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Create a new visible workbook."""
+        app = self.get_app(bring_to_front=True)
+        wb = app.Workbooks.Add()
+        self._wb = wb
+        if sheet_name:
+            wb.ActiveSheet.Name = sheet_name[:31]
+        return {
+            "status": "success",
+            "message": f"Created new workbook '{wb.Name}'",
+            "workbook": wb.Name,
+            "active_sheet": wb.ActiveSheet.Name
+        }
+
+    def open_workbook(self, file_path: str) -> Dict[str, Any]:
+        """Open an existing workbook (.xlsx, .xls, .xlsm, .csv)."""
+        app = self.get_app(bring_to_front=True)
+        abs_path = os.path.abspath(file_path)
+        if not os.path.exists(abs_path):
+            raise FileNotFoundError(f"File not found: {abs_path}")
+        wb = app.Workbooks.Open(abs_path)
+        self._wb = wb
+        return {
+            "status": "success",
+            "message": f"Opened workbook '{wb.Name}'",
+            "path": abs_path,
+            "sheets": [s.Name for s in wb.Worksheets]
+        }
+
+    def save_workbook(self, file_path: Optional[str] = None) -> Dict[str, Any]:
+        """Save the active workbook."""
+        wb = self.get_workbook()
+        app = self.get_app(bring_to_front=False)
+        app.DisplayAlerts = False
+        try:
+            if file_path:
+                abs_path = os.path.abspath(file_path)
+                os.makedirs(os.path.dirname(abs_path), exist_ok=True)
+                if os.path.exists(abs_path):
+                    try:
+                        os.remove(abs_path)
+                    except Exception:
+                        pass
+                ext = os.path.splitext(abs_path)[1].lower()
+                fmt = 51 if ext == ".xlsx" else (52 if ext == ".xlsm" else (6 if ext == ".csv" else None))
+                if fmt is not None:
+                    wb.SaveAs(abs_path, fmt)
+                else:
+                    wb.SaveAs(abs_path)
+                saved_to = abs_path
+            else:
+                wb.Save()
+                saved_to = wb.FullName
+        finally:
+            app.DisplayAlerts = True
+
+        return {
+            "status": "success",
+            "message": f"Workbook saved successfully to '{saved_to}'",
+            "path": saved_to
+        }
+
+    def export_pdf(self, output_path: Optional[str] = None, sheet_only: bool = False) -> Dict[str, Any]:
+        """Export the active workbook or current sheet directly to PDF."""
+        wb = self.get_workbook()
+        if not output_path:
+            base = os.path.splitext(wb.FullName)[0] if wb.Path else os.path.join(os.getcwd(), wb.Name)
+            output_path = base + ".pdf"
+        abs_path = os.path.abspath(output_path)
+        os.makedirs(os.path.dirname(abs_path), exist_ok=True)
+
+        target = wb.ActiveSheet if sheet_only else wb
+        # 0 = xlTypePDF
+        target.ExportAsFixedFormat(0, abs_path)
+        return {
+            "status": "success",
+            "message": f"Exported PDF successfully to '{abs_path}'",
+            "output_path": abs_path
+        }
+
+    def close_workbook(self, save_changes: bool = False) -> Dict[str, Any]:
+        """Close the active workbook."""
+        wb = self.get_workbook(create_if_none=False)
+        name = wb.Name
+        wb.Close(SaveChanges=save_changes)
+        return {"status": "success", "message": f"Closed workbook '{name}'."}
+
+    # ── SHEET OPERATIONS ──────────────────────────────────────────────────────
+
+    def list_sheets(self) -> List[Dict[str, Any]]:
+        """List all sheets with their index and visibility."""
+        wb = self.get_workbook()
+        result = []
+        for i, s in enumerate(wb.Worksheets, start=1):
+            result.append({
+                "index": i,
+                "name": s.Name,
+                "visible": s.Visible == -1,
+                "is_active": s.Name == wb.ActiveSheet.Name
+            })
+        return result
+
+    def add_sheet(self, name: str, after: Optional[str] = None) -> Dict[str, Any]:
+        """Add a new worksheet with the specified name."""
+        wb = self.get_workbook()
+        name_clean = name[:31]
+        if after:
+            try:
+                target = wb.Worksheets(after)
+                sheet = wb.Worksheets.Add(After=target)
+            except Exception:
+                sheet = wb.Worksheets.Add()
+        else:
+            sheet = wb.Worksheets.Add()
+        sheet.Name = name_clean
+        sheet.Activate()
+        return {
+            "status": "success",
+            "message": f"Added sheet '{name_clean}'",
+            "name": name_clean
+        }
+
+    def activate_sheet(self, name: str) -> Dict[str, Any]:
+        """Activate (switch to) a worksheet by name."""
+        sheet = self.get_sheet(name)
+        sheet.Activate()
+        return {"status": "success", "message": f"Activated sheet '{sheet.Name}'."}
+
+    def rename_sheet(self, old_name: str, new_name: str) -> Dict[str, Any]:
+        """Rename an existing worksheet."""
+        sheet = self.get_sheet(old_name)
+        sheet.Name = new_name[:31]
+        return {"status": "success", "message": f"Renamed sheet '{old_name}' to '{new_name[:31]}'"}
+
+    def delete_sheet(self, name: str) -> Dict[str, Any]:
+        """Delete a worksheet by name."""
+        wb = self.get_workbook()
+        app = self.get_app()
+        app.DisplayAlerts = False
+        try:
+            sheet = wb.Worksheets(name)
+            sheet.Delete()
+            return {"status": "success", "message": f"Deleted sheet '{name}'"}
+        finally:
+            app.DisplayAlerts = True
+
+    # ── CELL & RANGE OPERATIONS ───────────────────────────────────────────────
+
+    def read_range(self, range_address: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Read data from a cell or range of cells."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(range_address)
+        raw_val = rng.Value
+
+        # Normalize raw_val into a 2D list
+        if not isinstance(raw_val, (list, tuple)):
+            values = [[raw_val]]
+        elif isinstance(raw_val, tuple) and not isinstance(raw_val[0], tuple):
+            values = [[v for v in raw_val]]
+        else:
+            values = [[c for c in row] for row in raw_val]
+
+        return {
+            "address": rng.Address,
+            "rows": len(values),
+            "columns": len(values[0]) if values else 0,
+            "values": values,
+            "formula": str(rng.Formula) if rng.Count == 1 else None
+        }
+
+    def write_range(self, start_cell: str, data: List[List[Any]], sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Write a 2D array of data starting from start_cell."""
+        if not data or not data[0]:
+            return {"status": "noop", "message": "No data provided"}
+
+        sheet = self.get_sheet(sheet_name)
+        start_rng = sheet.Range(start_cell)
+        num_rows = len(data)
+        num_cols = max(len(row) for row in data)
+
+        # Pad rows to uniform columns length
+        clean_data = []
+        for row in data:
+            row_list = list(row)
+            if len(row_list) < num_cols:
+                row_list += [None] * (num_cols - len(row_list))
+            clean_data.append(tuple(row_list))
+
+        end_cell = sheet.Cells(start_rng.Row + num_rows - 1, start_rng.Column + num_cols - 1)
+        target_rng = sheet.Range(start_rng, end_cell)
+        target_rng.Value = tuple(clean_data)
+
+        return {
+            "status": "success",
+            "range": target_rng.Address,
+            "rows_written": num_rows,
+            "cols_written": num_cols
+        }
+
+    def write_cell(self, cell: str, value: Any, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Write a single value or formula to a specific cell."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(cell)
+        str_val = str(value)
+        if str_val.startswith("="):
+            rng.Formula = str_val
+        else:
+            rng.Value = value
+        return {
+            "status": "success",
+            "cell": cell,
+            "value": value
+        }
+
+    def set_formula(self, cell: str, formula: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Set an Excel formula in a cell or range (e.g., '=SUM(B2:B10)')."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(cell)
+        if not formula.startswith("="):
+            formula = "=" + formula
+        rng.Formula = formula
+        return {
+            "status": "success",
+            "cell": cell,
+            "formula": formula,
+            "calculated_value": rng.Value
+        }
+
+    def clear_range(self, range_address: str, clear_type: str = "all", sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Clear a range: 'all', 'contents', or 'formats'."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(range_address)
+        if clear_type == "contents":
+            rng.ClearContents()
+        elif clear_type == "formats":
+            rng.ClearFormats()
+        else:
+            rng.Clear()
+        return {"status": "success", "cleared": range_address, "type": clear_type}
+
+    def find_replace(self, find_text: str, replace_text: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Find and replace text across the active sheet."""
+        sheet = self.get_sheet(sheet_name)
+        # xlPart = 2, xlByRows = 1
+        sheet.Cells.Replace(What=find_text, Replacement=replace_text, LookAt=2, SearchOrder=1, MatchCase=False)
+        return {
+            "status": "success",
+            "find": find_text,
+            "replace": replace_text,
+            "message": f"Replaced all occurrences of '{find_text}' with '{replace_text}'"
+        }
+
+    # ── FORMATTING & STYLING ──────────────────────────────────────────────────
+
+    def format_range(
+        self,
+        range_address: str,
+        bold: Optional[bool] = None,
+        italic: Optional[bool] = None,
+        font_name: Optional[str] = None,
+        font_size: Optional[float] = None,
+        font_color: Optional[str] = None,
+        bg_color: Optional[str] = None,
+        horizontal_align: Optional[str] = None,
+        vertical_align: Optional[str] = None,
+        wrap_text: Optional[bool] = None,
+        number_format: Optional[str] = None,
+        border_style: Optional[str] = None,
+        border_color: Optional[str] = None,
+        sheet_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Format cells: font, background color, alignments, borders, and number formats."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(range_address)
+
+        if bold is not None:
+            rng.Font.Bold = bold
+        if italic is not None:
+            rng.Font.Italic = italic
+        if font_name is not None:
+            rng.Font.Name = font_name
+        if font_size is not None:
+            rng.Font.Size = font_size
+        if font_color is not None:
+            rng.Font.Color = hex_to_bgr_int(font_color)
+        if bg_color is not None:
+            rng.Interior.Color = hex_to_bgr_int(bg_color)
+        if horizontal_align in XL_H_ALIGN:
+            rng.HorizontalAlignment = XL_H_ALIGN[horizontal_align]
+        if vertical_align in XL_V_ALIGN:
+            rng.VerticalAlignment = XL_V_ALIGN[vertical_align]
+        if wrap_text is not None:
+            rng.WrapText = wrap_text
+        if number_format is not None:
+            rng.NumberFormat = number_format
+
+        if border_style and border_style in XL_BORDER_STYLES:
+            line_style, weight = XL_BORDER_STYLES[border_style]
+            # Apply to borders
+            for border_id in [7, 8, 9, 10, 11, 12]:  # left, top, bottom, right, inside_v, inside_h
+                try:
+                    b = rng.Borders(border_id)
+                    b.LineStyle = line_style
+                    b.Weight = weight
+                    if border_color:
+                        b.Color = hex_to_bgr_int(border_color)
+                except Exception:
+                    pass
+
+        return {
+            "status": "success",
+            "range": range_address,
+            "message": "Formatting applied successfully."
+        }
+
+    def autofit(self, columns: Optional[str] = None, rows: Optional[str] = None, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """AutoFit column widths and row heights."""
+        sheet = self.get_sheet(sheet_name)
+        if columns:
+            sheet.Columns(columns).AutoFit()
+        else:
+            sheet.Columns.AutoFit()
+        if rows:
+            sheet.Rows(rows).AutoFit()
+        return {"status": "success", "message": "Columns/rows auto-fitted."}
+
+    def freeze_panes(self, row: int = 2, col: int = 1, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Freeze panes at the specified row and column (e.g. freeze header row = row 2, col 1)."""
+        app = self.get_app()
+        sheet = self.get_sheet(sheet_name)
+        sheet.Activate()
+        app.ActiveWindow.FreezePanes = False
+        target = sheet.Cells(row, col)
+        target.Select()
+        app.ActiveWindow.FreezePanes = True
+        return {"status": "success", "message": f"Panes frozen at row {row}, column {col}."}
+
+    def unfreeze_panes(self) -> Dict[str, Any]:
+        """Unfreeze panes."""
+        app = self.get_app()
+        app.ActiveWindow.FreezePanes = False
+        return {"status": "success", "message": "Panes unfrozen."}
+
+    # ── TABLES & STRUCTURED DATA ──────────────────────────────────────────────
+
+    def create_table(
+        self,
+        range_address: str,
+        table_name: Optional[str] = None,
+        style_name: str = "TableStyleMedium9",
+        has_headers: bool = True,
+        sheet_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Convert a range of cells into an official Excel Table (ListObject)."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(range_address)
+        # xlSrcRange = 1, xlYes = 1, xlNo = 2
+        header_const = 1 if has_headers else 2
+        table = sheet.ListObjects.Add(1, rng, None, header_const)
+        if table_name:
+            table.Name = table_name
+        table.TableStyle = style_name
+        return {
+            "status": "success",
+            "table_name": table.Name,
+            "range": rng.Address,
+            "style": style_name
+        }
+
+    def add_table_total_row(self, table_name: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Display the total summary row for an Excel Table."""
+        sheet = self.get_sheet(sheet_name)
+        tbl = sheet.ListObjects(table_name)
+        tbl.ShowTotals = True
+        return {"status": "success", "table": table_name, "totals_shown": True}
+
+    # ── CHARTS & VISUALIZATIONS ───────────────────────────────────────────────
+
+    def add_chart(
+        self,
+        chart_type: str,
+        source_range: str,
+        title: Optional[str] = None,
+        left: float = 350,
+        top: float = 40,
+        width: float = 480,
+        height: float = 300,
+        sheet_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Insert a native Excel chart (column, bar, line, pie, doughnut, area, scatter)."""
+        sheet = self.get_sheet(sheet_name)
+        src_rng = sheet.Range(source_range)
+
+        chart_code = XL_CHART_TYPES.get(chart_type.lower(), 51)  # default column clustered
+        chart_obj = sheet.ChartObjects().Add(left, top, width, height)
+        chart = chart_obj.Chart
+        chart.SetSourceData(src_rng)
+        chart.ChartType = chart_code
+
+        if title:
+            chart.HasTitle = True
+            chart.ChartTitle.Text = title
+
+        return {
+            "status": "success",
+            "chart_name": chart_obj.Name,
+            "chart_type": chart_type,
+            "source_range": source_range,
+            "title": title
+        }
+
+    def export_chart_image(self, chart_index: int, output_path: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Export a chart as a high-resolution PNG image."""
+        sheet = self.get_sheet(sheet_name)
+        abs_path = os.path.abspath(output_path)
+        os.makedirs(os.path.dirname(abs_path), exist_ok=True)
+        chart_obj = sheet.ChartObjects(chart_index)
+        chart_obj.Chart.Export(abs_path, "PNG")
+        return {
+            "status": "success",
+            "message": f"Exported chart image to '{abs_path}'",
+            "output_path": abs_path
+        }
+
+    # ── HIGH-LEVEL EXECUTIVE DASHBOARD BLOCKS ──────────────────────────────────
+
+    def create_kpi_card(
+        self,
+        start_cell: str,
+        title: str,
+        value: str,
+        subtitle: Optional[str] = None,
+        accent_color: str = "#2563EB",
+        sheet_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Create a modern executive KPI metric block in a 3-row, 2-column cell box."""
+        sheet = self.get_sheet(sheet_name)
+        top_left = sheet.Range(start_cell)
+        r = top_left.Row
+        c = top_left.Column
+
+        # Define 3x2 card area
+        card_rng = sheet.Range(sheet.Cells(r, c), sheet.Cells(r + 2, c + 2))
+        card_rng.Interior.Color = hex_to_bgr_int("#F8FAFC")  # Light gray-slate background
+
+        # Border
+        for b_id in [7, 8, 9, 10]:
+            try:
+                b = card_rng.Borders(b_id)
+                b.LineStyle = 1
+                b.Weight = 2
+                b.Color = hex_to_bgr_int("#E2E8F0")
+            except Exception:
+                pass
+
+        # Title row
+        title_cell = sheet.Cells(r, c)
+        title_cell.Value = title.upper()
+        title_cell.Font.Bold = True
+        title_cell.Font.Size = 9
+        title_cell.Font.Color = hex_to_bgr_int("#64748B")
+
+        # Value row
+        val_cell = sheet.Cells(r + 1, c)
+        val_cell.Value = value
+        val_cell.Font.Bold = True
+        val_cell.Font.Size = 18
+        val_cell.Font.Color = hex_to_bgr_int(accent_color)
+
+        # Subtitle row
+        if subtitle:
+            sub_cell = sheet.Cells(r + 2, c)
+            sub_cell.Value = subtitle
+            sub_cell.Font.Italic = True
+            sub_cell.Font.Size = 8
+            sub_cell.Font.Color = hex_to_bgr_int("#059669" if "+" in subtitle else "#475569")
+
+        return {
+            "status": "success",
+            "card_range": card_rng.Address,
+            "title": title,
+            "value": value
+        }
+
+    # ── SORTING & FILTERING ───────────────────────────────────────────────────
+
+    def sort_range(
+        self,
+        range_address: str,
+        key_column: int = 1,
+        order: str = "ascending",
+        has_headers: bool = True,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Sort data in range by a key column."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(range_address)
+        # xlAscending = 1, xlDescending = 2; xlYes = 1, xlNo = 2
+        order_const = 1 if order.lower() == "ascending" else 2
+        header_const = 1 if has_headers else 2
+        key_rng = rng.Columns(key_column)
+        rng.Sort(Key1=key_rng, Order1=order_const, Header=header_const)
+        return {
+            "status": "success",
+            "range": range_address,
+            "key_column": key_column,
+            "order": order
+        }
+
+    def apply_filter(
+        self,
+        range_address: str,
+        column_index: int = 1,
+        criteria: Optional[str] = None,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Apply an AutoFilter to range on a specific column index."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(range_address)
+        if criteria:
+            rng.AutoFilter(Field=column_index, Criteria1=str(criteria))
+        else:
+            rng.AutoFilter(Field=column_index)
+        return {"status": "success", "range": range_address, "column": column_index, "criteria": criteria}
+
+    def clear_filters(self, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Clear all active AutoFilters on the sheet."""
+        sheet = self.get_sheet(sheet_name)
+        try:
+            if sheet.AutoFilterMode:
+                sheet.AutoFilterMode = False
+        except Exception:
+            pass
+        return {"status": "success", "message": "All filters cleared."}
+
+    # ── CONDITIONAL FORMATTING ────────────────────────────────────────────────
+
+    def add_conditional_formatting(
+        self,
+        range_address: str,
+        rule_type: str = "color_scale",
+        operator: str = "greater",
+        value: Optional[str] = None,
+        bg_color: Optional[str] = None,
+        font_color: Optional[str] = None,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Add conditional formatting: 'color_scale', 'data_bar', or 'cell_value' rule."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(range_address)
+
+        if rule_type == "color_scale":
+            cs = rng.FormatConditions.AddColorScale(3)
+            # Default 3-color scale (Green - Yellow - Red)
+        elif rule_type == "data_bar":
+            db = rng.FormatConditions.AddDatabar()
+            if bg_color:
+                db.BarColor.Color = hex_to_bgr_int(bg_color)
+        else:
+            # Cell value rule: xlCellValue = 1
+            op_map = {
+                "greater": 3,     # xlGreater
+                "less": 4,        # xlLess
+                "equal": 7,       # xlEqual
+                "between": 5,     # xlBetween
+                "not_equal": 8,   # xlNotEqual
+            }
+            op_const = op_map.get(operator.lower(), 3)
+            fc = rng.FormatConditions.Add(1, op_const, str(value or "0"))
+            if bg_color:
+                fc.Interior.Color = hex_to_bgr_int(bg_color)
+            if font_color:
+                fc.Font.Color = hex_to_bgr_int(font_color)
+
+        return {
+            "status": "success",
+            "range": range_address,
+            "rule_type": rule_type,
+            "message": f"Applied {rule_type} conditional formatting."
+        }
+
+    def clear_conditional_formatting(self, range_address: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Remove all conditional formatting rules from range."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(range_address)
+        rng.FormatConditions.Delete()
+        return {"status": "success", "range": range_address, "message": "Conditional formatting cleared."}
+
+    # ── DATA VALIDATION ───────────────────────────────────────────────────────
+
+    def add_data_validation(
+        self,
+        range_address: str,
+        validation_type: str = "list",
+        formula1: str = "Yes,No,Pending",
+        error_title: Optional[str] = None,
+        error_message: Optional[str] = None,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Add interactive dropdown list or value validation to a range of cells."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(range_address)
+        rng.Validation.Delete()
+
+        # xlValidateList = 3, xlValidAlertStop = 1
+        rng.Validation.Add(Type=3, AlertStyle=1, Operator=1, Formula1=formula1)
+        rng.Validation.IgnoreBlank = True
+        rng.Validation.InCellDropdown = True
+        if error_title:
+            rng.Validation.ErrorTitle = error_title
+        if error_message:
+            rng.Validation.ErrorMessage = error_message
+
+        return {
+            "status": "success",
+            "range": range_address,
+            "validation_type": validation_type,
+            "formula": formula1
+        }
+
+    def clear_data_validation(self, range_address: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Remove data validation dropdowns/rules from range."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(range_address)
+        rng.Validation.Delete()
+        return {"status": "success", "range": range_address, "message": "Data validation removed."}
+
+    # ── STRUCTURAL ROWS & COLUMNS ─────────────────────────────────────────────
+
+    def insert_rows(self, row_index: int, count: int = 1, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Insert blank rows before row_index."""
+        sheet = self.get_sheet(sheet_name)
+        for _ in range(count):
+            sheet.Rows(row_index).Insert()
+        return {"status": "success", "inserted_at": row_index, "count": count}
+
+    def delete_rows(self, row_index: int, count: int = 1, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Delete rows starting from row_index."""
+        sheet = self.get_sheet(sheet_name)
+        for _ in range(count):
+            sheet.Rows(row_index).Delete()
+        return {"status": "success", "deleted_at": row_index, "count": count}
+
+    def insert_columns(self, column: Union[str, int], count: int = 1, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Insert blank columns before the specified column letter or index."""
+        sheet = self.get_sheet(sheet_name)
+        for _ in range(count):
+            sheet.Columns(column).Insert()
+        return {"status": "success", "inserted_at": str(column), "count": count}
+
+    def delete_columns(self, column: Union[str, int], count: int = 1, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Delete columns starting from column letter or index."""
+        sheet = self.get_sheet(sheet_name)
+        for _ in range(count):
+            sheet.Columns(column).Delete()
+        return {"status": "success", "deleted_at": str(column), "count": count}
+
+    def hide_unhide_columns(self, columns: str, hide: bool = True, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Hide or unhide specific columns (e.g. 'C:E')."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Columns(columns).Hidden = hide
+        return {"status": "success", "columns": columns, "hidden": hide}
+
+    def hide_unhide_rows(self, rows: str, hide: bool = True, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Hide or unhide specific rows (e.g. '10:15')."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Rows(rows).Hidden = hide
+        return {"status": "success", "rows": rows, "hidden": hide}
+
+    def set_column_width(self, columns: str, width: float, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Set explicit column width (e.g. columns='B:D', width=20)."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Columns(columns).ColumnWidth = width
+        return {"status": "success", "columns": columns, "width": width}
+
+    def set_row_height(self, rows: str, height: float, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Set explicit row height in points (e.g. rows='1:3', height=25)."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Rows(rows).RowHeight = height
+        return {"status": "success", "rows": rows, "height": height}
+
+    def merge_cells(self, range_address: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Merge cells in range."""
+        sheet = self.get_sheet(sheet_name)
+        app = self.get_app(bring_to_front=False)
+        app.DisplayAlerts = False
+        try:
+            sheet.Range(range_address).Merge()
+        finally:
+            app.DisplayAlerts = True
+        return {"status": "success", "merged": range_address}
+
+    def unmerge_cells(self, range_address: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Unmerge cells in range."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Range(range_address).UnMerge()
+        return {"status": "success", "unmerged": range_address}
+
+    # ── IMAGES & VISUAL EXPORT ────────────────────────────────────────────────
+
+    def add_image(
+        self,
+        image_path: str,
+        cell: str = "B2",
+        width: Optional[float] = None,
+        height: Optional[float] = None,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Insert an image file onto a worksheet anchored at a cell."""
+        sheet = self.get_sheet(sheet_name)
+        abs_path = os.path.abspath(image_path)
+        if not os.path.exists(abs_path):
+            raise FileNotFoundError(f"Image not found: {abs_path}")
+
+        target_cell = sheet.Range(cell)
+        pic = sheet.Pictures().Insert(abs_path)
+        pic.Left = target_cell.Left
+        pic.Top = target_cell.Top
+        if width:
+            pic.Width = width
+        if height:
+            pic.Height = height
+
+        return {
+            "status": "success",
+            "image": abs_path,
+            "cell": cell,
+            "width": pic.Width,
+            "height": pic.Height
+        }
+
+    def export_range_image(
+        self,
+        range_address: str,
+        output_path: str,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Take a high-resolution snapshot of a range and save as PNG image."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(range_address)
+        abs_path = os.path.abspath(output_path)
+        os.makedirs(os.path.dirname(abs_path), exist_ok=True)
+
+        # 1 = xlScreen, 2 = xlBitmap
+        rng.CopyPicture(1, 2)
+        chart_obj = sheet.ChartObjects().Add(0, 0, rng.Width, rng.Height)
+        chart = chart_obj.Chart
+        chart.Paste()
+        chart.Export(abs_path, "PNG")
+        chart_obj.Delete()
+
+        return {
+            "status": "success",
+            "range": range_address,
+            "output_path": abs_path
+        }
+
+    # ── COMMENTS & NOTES ──────────────────────────────────────────────────────
+
+    def add_comment(self, cell: str, text: str, author: Optional[str] = None, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Add a note or comment to a specific cell."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(cell)
+        try:
+            rng.ClearComments()
+        except Exception:
+            pass
+        prefix = f"{author}: " if author else ""
+        rng.AddComment(prefix + text)
+        return {"status": "success", "cell": cell, "comment": text}
+
+    def list_comments(self, sheet_name: Optional[str] = None) -> List[Dict[str, Any]]:
+        """List all cell comments across the active sheet."""
+        sheet = self.get_sheet(sheet_name)
+        comments = []
+        try:
+            for c in sheet.Comments:
+                comments.append({
+                    "cell": c.Parent.Address,
+                    "author": c.Author,
+                    "text": c.Text()
+                })
+        except Exception:
+            pass
+        return comments
+
+    def delete_comment(self, cell: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Delete comment on a specific cell."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Range(cell).ClearComments()
+        return {"status": "success", "cell": cell, "message": "Comment removed."}
+
+    # ── SECURITY & PROTECTION ─────────────────────────────────────────────────
+
+    def protect_sheet(self, password: Optional[str] = None, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Protect a worksheet to prevent accidental edits."""
+        sheet = self.get_sheet(sheet_name)
+        if password:
+            sheet.Protect(Password=password)
+        else:
+            sheet.Protect()
+        return {"status": "success", "sheet": sheet.Name, "protected": True}
+
+    def unprotect_sheet(self, password: Optional[str] = None, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Unprotect a worksheet."""
+        sheet = self.get_sheet(sheet_name)
+        if password:
+            sheet.Unprotect(Password=password)
+        else:
+            sheet.Unprotect()
+        return {"status": "success", "sheet": sheet.Name, "protected": False}
+
+    # ── NAMED RANGES ──────────────────────────────────────────────────────────
+
+    def create_named_range(self, name: str, range_address: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Create a workbook-level named range."""
+        sheet = self.get_sheet(sheet_name)
+        wb = self.get_workbook()
+        refers_to = f"='{sheet.Name}'!{sheet.Range(range_address).Address}"
+        wb.Names.Add(Name=name, RefersTo=refers_to)
+        return {"status": "success", "name": name, "refers_to": refers_to}
+
+    def list_named_ranges(self) -> List[Dict[str, Any]]:
+        """List all defined named ranges in the workbook."""
+        wb = self.get_workbook()
+        result = []
+        try:
+            for n in wb.Names:
+                result.append({"name": n.Name, "refers_to": n.RefersTo})
+        except Exception:
+            pass
+        return result
+
+    def delete_named_range(self, name: str) -> Dict[str, Any]:
+        """Delete a named range."""
+        wb = self.get_workbook()
+        wb.Names(name).Delete()
+        return {"status": "success", "deleted": name}
+
+    # ── CALCULATION & AUDIT ───────────────────────────────────────────────────
+
+    def calculate_now(self) -> Dict[str, Any]:
+        """Force Excel to recalculate all formulas immediately."""
+        app = self.get_app(bring_to_front=False)
+        app.Calculate()
+        return {"status": "success", "message": "Formulas recalculated."}
+
+    def list_formulas(self, range_address: Optional[str] = None, sheet_name: Optional[str] = None) -> List[Dict[str, Any]]:
+        """List all cells containing formulas in a range or sheet."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(range_address) if range_address else sheet.UsedRange
+        results = []
+        try:
+            # xlCellTypeFormulas = -4123
+            formula_cells = rng.SpecialCells(-4123)
+            for c in formula_cells:
+                results.append({
+                    "cell": c.Address,
+                    "formula": str(c.Formula),
+                    "value": c.Value
+                })
+        except Exception:
+            pass
+        return results
+
+    # ── PIVOT TABLES ──────────────────────────────────────────────────────────
+
+    def create_pivot_table(
+        self,
+        source_range: str,
+        dest_cell: str,
+        table_name: str = "SummaryPivot",
+        row_fields: Optional[List[str]] = None,
+        value_fields: Optional[List[str]] = None,
+        col_fields: Optional[List[str]] = None,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Create a native Excel Pivot Table from a data range."""
+        sheet = self.get_sheet(sheet_name)
+        wb = self.get_workbook()
+        src_rng = sheet.Range(source_range)
+        dest_rng = sheet.Range(dest_cell)
+
+        # xlDatabase = 1
+        pc = wb.PivotCaches().Create(SourceType=1, SourceData=src_rng)
+        pt = pc.CreatePivotTable(TableDestination=dest_rng, TableName=table_name)
+
+        if row_fields:
+            for f in row_fields:
+                pt.PivotFields(f).Orientation = 1  # xlRowField
+
+        if col_fields:
+            for f in col_fields:
+                pt.PivotFields(f).Orientation = 2  # xlColumnField
+
+        if value_fields:
+            for f in value_fields:
+                # 4 = xlDataField, -4157 = xlSum
+                field = pt.PivotFields(f)
+                field.Orientation = 4
+                field.Function = -4157
+
+        return {
+            "status": "success",
+            "table_name": table_name,
+            "destination": dest_cell,
+            "source": source_range
+        }
+
+    # ── HYPERLINKS ────────────────────────────────────────────────────────────
+
+    def add_hyperlink(
+        self,
+        cell: str,
+        target: str,
+        text_to_display: Optional[str] = None,
+        tooltip: Optional[str] = None,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Add an external web URL or internal sheet link to a cell."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(cell)
+        display_text = text_to_display or target
+        is_internal = target.startswith("#") or "!" in target
+
+        if is_internal:
+            sub_addr = target.lstrip("#")
+            sheet.Hyperlinks.Add(
+                Anchor=rng,
+                Address="",
+                SubAddress=sub_addr,
+                ScreenTip=tooltip or "",
+                TextToDisplay=display_text
+            )
+        else:
+            sheet.Hyperlinks.Add(
+                Anchor=rng,
+                Address=target,
+                ScreenTip=tooltip or "",
+                TextToDisplay=display_text
+            )
+
+        return {"status": "success", "cell": cell, "target": target, "text": display_text}
+
+    def remove_hyperlink(self, cell: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Remove hyperlink from cell while preserving text content."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Range(cell).Hyperlinks.Delete()
+        return {"status": "success", "cell": cell, "message": "Hyperlink removed."}
+
+    # ── TAB COLOR & VIEW SETTINGS ─────────────────────────────────────────────
+
+    def set_tab_color(self, hex_color: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Set worksheet tab color."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Tab.Color = hex_to_bgr_int(hex_color)
+        return {"status": "success", "sheet": sheet.Name, "color": hex_color}
+
+    def toggle_gridlines(self, show: bool = True) -> Dict[str, Any]:
+        """Toggle worksheet gridlines visibility (hide for presentation-ready dashboards)."""
+        app = self.get_app(bring_to_front=False)
+        app.ActiveWindow.DisplayGridlines = show
+        return {"status": "success", "gridlines_visible": show}
+
+    def toggle_headings(self, show: bool = True) -> Dict[str, Any]:
+        """Toggle worksheet row numbers and column letters visibility."""
+        app = self.get_app(bring_to_front=False)
+        app.ActiveWindow.DisplayHeadings = show
+        return {"status": "success", "headings_visible": show}
+
+    # ── PAGE SETUP & PRINT ────────────────────────────────────────────────────
+
+    def set_page_setup(
+        self,
+        orientation: str = "landscape",
+        paper_size: str = "A4",
+        fit_to_pages: bool = True,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Configure page orientation, paper size, and print scaling."""
+        sheet = self.get_sheet(sheet_name)
+        ps = sheet.PageSetup
+
+        # xlLandscape = 2, xlPortrait = 1
+        ps.Orientation = 2 if orientation.lower() == "landscape" else 1
+
+        # xlPaperA4 = 9, xlPaperLetter = 1
+        ps.PaperSize = 9 if paper_size.upper() == "A4" else 1
+
+        if fit_to_pages:
+            ps.Zoom = False
+            ps.FitToPagesWide = 1
+            ps.FitToPagesTall = 1
+
+        return {
+            "status": "success",
+            "sheet": sheet.Name,
+            "orientation": orientation,
+            "paper_size": paper_size,
+            "fit_to_pages": fit_to_pages
+        }
+
+    def set_print_area(self, range_address: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Set specific print area for the worksheet."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.PageSetup.PrintArea = range_address
+        return {"status": "success", "print_area": range_address}
+
+    def clear_print_area(self, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Clear the print area for the worksheet."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.PageSetup.PrintArea = ""
+        return {"status": "success", "message": "Print area cleared."}
+
+    # ── ADVANCED DATA ANALYSIS & SEARCH ───────────────────────────────────────
+
+    def find_all(self, search_term: str, match_case: bool = False, sheet_name: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Find all cell occurrences of a text term across the active sheet."""
+        sheet = self.get_sheet(sheet_name)
+        # xlPart = 2
+        first_found = sheet.Cells.Find(What=search_term, LookAt=2, MatchCase=match_case)
+        if not first_found:
+            return []
+
+        results = []
+        first_addr = first_found.Address
+        current = first_found
+
+        while current:
+            results.append({
+                "cell": current.Address,
+                "value": current.Value,
+                "formula": str(current.Formula) if current.HasFormula else None
+            })
+            current = sheet.Cells.FindNext(current)
+            if not current or current.Address == first_addr:
+                break
+
+        return results
+
+    def get_column_summary(self, range_address: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Calculate quick descriptive statistics for numeric data in a range."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(range_address)
+        app = self.get_app(bring_to_front=False)
+        wf = app.WorksheetFunction
+
+        try:
+            total_sum = wf.Sum(rng)
+            avg = wf.Average(rng)
+            min_val = wf.Min(rng)
+            max_val = wf.Max(rng)
+            count = wf.Count(rng)
+            return {
+                "range": range_address,
+                "count": count,
+                "sum": total_sum,
+                "average": round(avg, 4),
+                "min": min_val,
+                "max": max_val
+            }
+        except Exception as e:
+            return {"range": range_address, "error": f"Could not calculate summary: {e}"}
+
+    def remove_duplicates(
+        self,
+        range_address: str,
+        columns: Optional[List[int]] = None,
+        has_headers: bool = True,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Remove duplicate rows from a data table."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(range_address)
+        # xlYes = 1, xlNo = 2
+        header_const = 1 if has_headers else 2
+        col_indices = tuple(columns) if columns else tuple(range(1, rng.Columns.Count + 1))
+
+        rng.RemoveDuplicates(Columns=col_indices, Header=header_const)
+        return {"status": "success", "range": range_address, "columns_checked": list(col_indices)}
+
+    def goal_seek(
+        self,
+        target_cell: str,
+        target_value: float,
+        changing_cell: str,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Perform Goal Seek what-if analysis to find the input needed for a desired formula result."""
+        sheet = self.get_sheet(sheet_name)
+        formula_rng = sheet.Range(target_cell)
+        changing_rng = sheet.Range(changing_cell)
+
+        success = formula_rng.GoalSeek(Goal=float(target_value), ChangingCell=changing_rng)
+        return {
+            "status": "success" if success else "failed",
+            "target_cell": target_cell,
+            "target_value": target_value,
+            "changing_cell": changing_cell,
+            "result_value": changing_rng.Value
+        }
+
+    def text_to_columns(
+        self,
+        range_address: str,
+        destination_cell: str,
+        delimiter: str = ",",
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Split delimited text in a single column into multiple columns."""
+        sheet = self.get_sheet(sheet_name)
+        src_rng = sheet.Range(range_address)
+        dest_rng = sheet.Range(destination_cell)
+
+        # 1 = xlDelimited
+        is_comma = delimiter == ","
+        is_tab = delimiter == "\t"
+        is_semicolon = delimiter == ";"
+        is_space = delimiter == " "
+        other_char = delimiter if (not is_comma and not is_tab and not is_semicolon and not is_space) else False
+
+        src_rng.TextToColumns(
+            Destination=dest_rng,
+            DataType=1,
+            TextQualifier=1,
+            ConsecutiveDelimiter=False,
+            Tab=is_tab,
+            Semicolon=is_semicolon,
+            Comma=is_comma,
+            Space=is_space,
+            Other=bool(other_char),
+            OtherChar=other_char if other_char else ""
+        )
+
+        return {"status": "success", "source": range_address, "destination": destination_cell, "delimiter": delimiter}
+
+    # ── SPARKLINES & GANTT BLOCKS ─────────────────────────────────────────────
+
+    def add_sparkline(
+        self,
+        data_range: str,
+        location_cell: str,
+        sparkline_type: str = "line",
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Insert a mini in-cell trend sparkline (line, column, win_loss)."""
+        sheet = self.get_sheet(sheet_name)
+        target_cell = sheet.Range(location_cell)
+        data_rng = sheet.Range(data_range)
+
+        # xlSparkLine = 1, xlSparkColumn = 2, xlSparkWinLoss = 3
+        type_map = {"line": 1, "column": 2, "win_loss": 3}
+        sp_type = type_map.get(sparkline_type.lower(), 1)
+
+        target_cell.SparklineGroups.Add(Type=sp_type, SourceData=data_rng.Address)
+        return {
+            "status": "success",
+            "location": location_cell,
+            "data_source": data_range,
+            "sparkline_type": sparkline_type
+        }
+
+    def create_gantt_block(
+        self,
+        start_cell: str,
+        tasks: List[Dict[str, Any]],
+        weeks_count: int = 6,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Create a modern project Gantt timeline grid."""
+        sheet = self.get_sheet(sheet_name)
+        tl = sheet.Range(start_cell)
+        r = tl.Row
+        c = tl.Column
+
+        # Headers
+        headers = ["Task Name", "Owner", "Start Wk", "Duration (Wks)"] + [f"W{i}" for i in range(1, weeks_count + 1)]
+        for col_idx, h in enumerate(headers):
+            cell = sheet.Cells(r, c + col_idx)
+            cell.Value = h
+            cell.Font.Bold = True
+            cell.Interior.Color = hex_to_bgr_int("#1E293B")
+            cell.Font.Color = hex_to_bgr_int("#FFFFFF")
+            cell.HorizontalAlignment = -4108  # center
+
+        # Task rows
+        for t_idx, t in enumerate(tasks, start=1):
+            curr_r = r + t_idx
+            sheet.Cells(curr_r, c).Value = t.get("name", f"Task {t_idx}")
+            sheet.Cells(curr_r, c + 1).Value = t.get("owner", "Team")
+            st_wk = int(t.get("start_week", 1))
+            dur = int(t.get("duration", 1))
+            sheet.Cells(curr_r, c + 2).Value = st_wk
+            sheet.Cells(curr_r, c + 3).Value = dur
+
+            # Fill bar cells
+            for w in range(1, weeks_count + 1):
+                bar_cell = sheet.Cells(curr_r, c + 3 + w)
+                if st_wk <= w < (st_wk + dur):
+                    bar_cell.Interior.Color = hex_to_bgr_int(t.get("color", "#3B82F6"))
+                else:
+                    bar_cell.Interior.Color = hex_to_bgr_int("#F8FAFC")
+
+        # Borders
+        grid_rng = sheet.Range(sheet.Cells(r, c), sheet.Cells(r + len(tasks), c + len(headers) - 1))
+        for b_id in [7, 8, 9, 10, 11, 12]:
+            try:
+                b = grid_rng.Borders(b_id)
+                b.LineStyle = 1
+                b.Weight = 2
+                b.Color = hex_to_bgr_int("#CBD5E1")
+            except Exception:
+                pass
+
+        return {
+            "status": "success",
+            "gantt_range": grid_rng.Address,
+            "tasks_count": len(tasks),
+            "weeks": weeks_count
+        }
+
+
+# Singleton instance
+controller = ExcelController()
