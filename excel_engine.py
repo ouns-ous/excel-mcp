@@ -270,3 +270,37 @@ class ExcelEngine:
         for row in ws.iter_rows(min_col=col_idx, max_col=col_idx, values_only=True):
             values.append(row[0])
         return values
+
+    @staticmethod
+    def extract_metadata(file_path: str) -> Dict[str, Any]:
+        """Extract core OOXML document metadata (Author, Created, Title, Modified)."""
+        abs_in = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(abs_in)
+        p = wb.properties
+        return {
+            "title": p.title,
+            "creator": p.creator,
+            "subject": p.subject,
+            "description": p.description,
+            "created": str(p.created) if p.created else None,
+            "modified": str(p.modified) if p.modified else None,
+            "lastModifiedBy": p.lastModifiedBy
+        }
+
+    @staticmethod
+    def set_metadata(file_path: str, title: Optional[str] = None, author: Optional[str] = None, subject: Optional[str] = None, output_path: Optional[str] = None) -> str:
+        """Set or update document properties/metadata."""
+        abs_in = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(abs_in)
+        if title is not None:
+            wb.properties.title = title
+        if author is not None:
+            wb.properties.creator = author
+            wb.properties.lastModifiedBy = author
+        if subject is not None:
+            wb.properties.subject = subject
+
+        dest = os.path.abspath(output_path) if output_path else abs_in
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return dest

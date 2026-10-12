@@ -1151,6 +1151,272 @@ def excel_extract_column(file_path: str, column: Union[str, int], sheet_name: Op
     return ExcelEngine.extract_column(file_path=file_path, column=column, sheet_name=sheet_name)
 
 
+# ── CELL STYLES & NUMBER PRESETS ────────────────────────────────────────────────
+
+@mcp.tool()
+def excel_apply_cell_style(range_address: str, style_name: str = "Good", sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Apply an official Excel built-in cell style ('Good', 'Bad', 'Neutral', 'Title', 'Heading 1', 'Total', 'Calculation', 'Input').
+    Args:
+        range_address: Target cell range (e.g. 'B2:F2', 'D5').
+        style_name: Built-in style name.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.apply_cell_style(range_address=range_address, style_name=style_name, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_list_cell_styles() -> List[str]:
+    """List all available workbook cell styles."""
+    return controller.list_cell_styles()
+
+
+@mcp.tool()
+def excel_set_number_format_preset(range_address: str, preset: str = "currency_usd", sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Apply standard financial and business number format presets.
+    Args:
+        range_address: Cell range (e.g. 'C4:C50').
+        preset: 'currency_usd', 'currency_eur', 'currency_mad', 'currency_int', 'percent', 'percent_int', 'accounting', 'date_short', 'date_long', 'integer', 'decimal_two'.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.set_number_format_preset(range_address=range_address, preset=preset, sheet_name=sheet_name)
+
+
+# ── ADVANCED SHEET WORKFLOWS ────────────────────────────────────────────────────
+
+@mcp.tool()
+def excel_duplicate_sheet(sheet_name: str, new_name: Optional[str] = None) -> Dict[str, Any]:
+    """Clone an existing worksheet with all formulas, charts, styles, and data intact.
+    Args:
+        sheet_name: Name of the sheet to clone.
+        new_name: Optional custom name for the new cloned sheet.
+    """
+    return controller.duplicate_sheet(sheet_name=sheet_name, new_name=new_name)
+
+
+@mcp.tool()
+def excel_move_sheet(sheet_name: str, before: Optional[str] = None, after: Optional[str] = None) -> Dict[str, Any]:
+    """Reorder sheet tabs in the workbook.
+    Args:
+        sheet_name: Name of the sheet to move.
+        before: Optional sheet before which to place.
+        after: Optional sheet after which to place.
+    """
+    return controller.move_sheet(sheet_name=sheet_name, before=before, after=after)
+
+
+@mcp.tool()
+def excel_hide_unhide_sheet(sheet_name: str, hide: bool = True, very_hidden: bool = False) -> Dict[str, Any]:
+    """Hide or unhide a worksheet (very_hidden prevents users from unhiding via standard Excel UI).
+    Args:
+        sheet_name: Name of the worksheet.
+        hide: True to hide, False to unhide.
+        very_hidden: If True, sets sheet to xlSheetVeryHidden.
+    """
+    return controller.hide_unhide_sheet(sheet_name=sheet_name, hide=hide, very_hidden=very_hidden)
+
+
+# ── ADVANCED FORMULAS & CALCULATION ─────────────────────────────────────────────
+
+@mcp.tool()
+def excel_convert_formulas_to_values(range_address: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Paste/freeze formula results as static values in a range (locks data).
+    Args:
+        range_address: Range to convert (e.g. 'B4:F20').
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.convert_formulas_to_values(range_address=range_address, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_evaluate_expression(expression: str) -> Dict[str, Any]:
+    """Evaluate an arbitrary formula or expression directly in Excel's calculation engine (e.g. 'SUM(10, 20, 30)', 'NOW()').
+    Args:
+        expression: Excel formula string to compute.
+    """
+    return controller.evaluate_expression(expression=expression)
+
+
+# ── VIEW, ZOOM & WINDOW SETTINGS ────────────────────────────────────────────────
+
+@mcp.tool()
+def excel_set_zoom(zoom_percentage: int = 100, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Set the window zoom level (e.g. 75, 100, 120, 150).
+    Args:
+        zoom_percentage: Zoom percentage (10 to 400).
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.set_zoom(zoom_percentage=zoom_percentage, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_split_panes(row: Optional[int] = None, col: Optional[int] = None) -> Dict[str, Any]:
+    """Split or unsplit the window view panes horizontally and/or vertically.
+    Args:
+        row: Row index for horizontal split (or None to unsplit).
+        col: Column index for vertical split.
+    """
+    return controller.split_panes(row=row, col=col)
+
+
+# ── EXECUTIVE VISUAL COMPONENTS ─────────────────────────────────────────────────
+
+@mcp.tool()
+def excel_add_callout_box(
+    cell: str,
+    text: str,
+    title: Optional[str] = None,
+    box_type: str = "info",
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Insert a modern styled callout/alert banner shape with accent border and colors.
+    Args:
+        cell: Anchor cell (e.g. 'B2').
+        text: Main message text.
+        title: Optional banner title (e.g. 'NOTE', 'WARNING', 'CONFIDENTIAL').
+        box_type: 'info', 'warning', 'success', or 'danger'.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.add_callout_box(cell=cell, text=text, title=title, box_type=box_type, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_add_metric_tile(
+    cell: str,
+    label: str,
+    value: str,
+    delta: Optional[str] = None,
+    status: str = "positive",
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Insert a compact 2-row metric card with label, value, and colored delta indicator.
+    Args:
+        cell: Top-left cell anchor (e.g. 'B2').
+        label: Metric label (e.g. 'Conversion Rate').
+        value: Primary number (e.g. '4.8%').
+        delta: Optional trend change string (e.g. '+0.6% MoM').
+        status: 'positive', 'negative', or 'neutral'.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.add_metric_tile(cell=cell, label=label, value=value, delta=delta, status=status, sheet_name=sheet_name)
+
+
+# ── PRINT HEADERS, FOOTERS, FORMS & HTML EXPORT ─────────────────────────────────
+
+@mcp.tool()
+def excel_set_header_footer(
+    header_left: Optional[str] = None,
+    header_center: Optional[str] = None,
+    header_right: Optional[str] = None,
+    footer_left: Optional[str] = None,
+    footer_center: Optional[str] = None,
+    footer_right: Optional[str] = None,
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Configure printed page headers and footers (supports &P page number, &N total pages, &D date).
+    Args:
+        header_left: Left header text.
+        header_center: Center header text.
+        header_right: Right header text.
+        footer_left: Left footer text.
+        footer_center: Center footer text.
+        footer_right: Right footer text.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.set_header_footer(
+        header_left=header_left,
+        header_center=header_center,
+        header_right=header_right,
+        footer_left=footer_left,
+        footer_center=footer_center,
+        footer_right=footer_right,
+        sheet_name=sheet_name
+    )
+
+
+@mcp.tool()
+def excel_add_checkbox(
+    cell: str,
+    caption: str = "Done",
+    linked_cell: Optional[str] = None,
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Insert an interactive Form Control Checkbox connected to a boolean cell value.
+    Args:
+        cell: Anchor cell coordinate (e.g. 'B5').
+        caption: Text label next to checkbox.
+        linked_cell: Optional cell address (e.g. 'C5') that toggles TRUE/FALSE with checkbox clicks.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.add_checkbox(cell=cell, caption=caption, linked_cell=linked_cell, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_export_html(output_path: str, sheet_only: bool = False) -> Dict[str, Any]:
+    """Export the active workbook or current sheet as a standalone interactive HTML web file.
+    Args:
+        output_path: Destination path (.html).
+        sheet_only: If True, exports only current sheet; if False, exports workbook.
+    """
+    return controller.export_html(output_path=output_path, sheet_only=sheet_only)
+
+
+# ── HEADLESS OOXML METADATA TOOLS ───────────────────────────────────────────────
+
+@mcp.tool()
+def excel_extract_metadata(file_path: str) -> Dict[str, Any]:
+    """Extract core document metadata (Title, Author, Subject, Created, Modified) headlessly.
+    Args:
+        file_path: Path to the .xlsx file.
+    """
+    return ExcelEngine.extract_metadata(file_path=file_path)
+
+
+@mcp.tool()
+def excel_set_metadata(
+    file_path: str,
+    title: Optional[str] = None,
+    author: Optional[str] = None,
+    subject: Optional[str] = None,
+    output_path: Optional[str] = None
+) -> Dict[str, Any]:
+    """Set or scrub document metadata (Title, Author, Subject) headlessly.
+    Args:
+        file_path: Source .xlsx file path.
+        title: Optional document title.
+        author: Optional author name.
+        subject: Optional document subject.
+        output_path: Optional destination path (if omitted, updates in place).
+    """
+    res = ExcelEngine.set_metadata(file_path=file_path, title=title, author=author, subject=subject, output_path=output_path)
+    return {"status": "success", "file": res, "message": "Updated metadata."}
+
+
+@mcp.tool()
+def excel_add_watermark(
+    text: str = "CONFIDENTIAL",
+    font_size: int = 54,
+    color: str = "#E2E8F0",
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Add a semi-transparent diagonal watermark across the sheet (e.g. 'DRAFT', 'CONFIDENTIAL').
+    Args:
+        text: Watermark text.
+        font_size: Point size (default 54).
+        color: Hex color string.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.add_watermark(text=text, font_size=font_size, color=color, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_clear_all_formatting(sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Reset all cell styling, colors, and borders across the active sheet back to raw defaults.
+    Args:
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.clear_all_formatting(sheet_name=sheet_name)
+
+
 def main():
     """Run the FastMCP server."""
     mcp.run()

@@ -16,7 +16,7 @@ A comprehensive **Model Context Protocol (MCP)** server for Windows enabling AI 
 
 ---
 
-## 🛠️ Complete List of Tools (81 Tools)
+## 🛠️ Complete List of Tools (100 Tools)
 
 ### 1. Workbook & Window Management
 - `excel_status()`: Get current running state, open workbooks count, active sheet, active cell, and used range.
@@ -24,30 +24,42 @@ A comprehensive **Model Context Protocol (MCP)** server for Windows enabling AI 
 - `excel_open(file_path)`: Open an existing workbook (`.xlsx`, `.xls`, `.xlsm`, `.csv`).
 - `excel_save(file_path)`: Save the active workbook.
 - `excel_export_pdf(output_path, sheet_only)`: Export workbook or active sheet directly to PDF.
+- `excel_export_html(output_path, sheet_only)`: Export workbook or sheet as standalone interactive HTML web file.
 - `excel_close(save_changes)`: Close the active workbook.
 - `excel_focus_window()`: Bring Microsoft Excel to foreground and maximize.
 
-### 2. Sheet Operations & Tab Styling
+### 2. Sheet Operations, Organization & Tab Styling
 - `excel_list_sheets()`: List all worksheets with indices and visibility status.
 - `excel_add_sheet(name, after)`: Add a new worksheet.
+- `excel_duplicate_sheet(sheet_name, new_name)`: Clone an existing worksheet with all formulas and styles.
+- `excel_move_sheet(sheet_name, before, after)`: Reorder worksheet tabs.
 - `excel_activate_sheet(name)`: Switch active focus to a worksheet.
 - `excel_rename_sheet(old_name, new_name)`: Rename a worksheet.
 - `excel_delete_sheet(name)`: Delete a worksheet.
+- `excel_hide_unhide_sheet(sheet_name, hide, very_hidden)`: Hide or unhide sheets (supports xlSheetVeryHidden).
 - `excel_set_tab_color(hex_color)`: Colorize worksheet tabs (e.g. Red, Blue, Green).
 - `excel_toggle_gridlines(show)`: Show/hide gridlines (ideal for sleek dashboard presentations).
 - `excel_toggle_headings(show)`: Show/hide row numbers and column letters.
+- `excel_set_zoom(zoom_percentage)`: Set window zoom level (10% to 400%).
+- `excel_split_panes(row, col)`: Split or unsplit window view panes.
 
 ### 3. Data & Formulas
 - `excel_read_range(range_address, sheet_name)`: Read cell or 2D range values.
 - `excel_write_range(start_cell, data, sheet_name)`: Write 2D array of values starting at `start_cell`.
 - `excel_write_cell(cell, value, sheet_name)`: Write a single value or formula.
 - `excel_set_formula(cell, formula, sheet_name)`: Set an Excel formula (`=SUM(...)`, etc.).
+- `excel_convert_formulas_to_values(range_address)`: Freeze formula results into static values.
+- `excel_evaluate_expression(expression)`: Evaluate arbitrary Excel expression using calculation engine.
 - `excel_clear_range(range_address, clear_type, sheet_name)`: Clear contents, formatting, or all.
+- `excel_clear_all_formatting()`: Reset all formatting across used range to raw defaults.
 - `excel_find_replace(find_text, replace_text, sheet_name)`: Search and replace text.
 - `excel_find_all(search_term, match_case)`: Find all cell occurrences across sheet.
 
-### 4. Formatting & Layout
+### 4. Formatting, Styles & Number Presets
 - `excel_format_range(...)`: Apply bold, italic, font name, font size, colors (hex), alignment, borders, and number formats.
+- `excel_apply_cell_style(range_address, style_name)`: Apply built-in Excel style ('Good', 'Bad', 'Neutral', 'Title', etc.).
+- `excel_list_cell_styles()`: List all workbook cell styles.
+- `excel_set_number_format_preset(range_address, preset)`: Preset formats (currency USD/EUR/MAD, percent, accounting, dates).
 - `excel_autofit(columns, rows, sheet_name)`: Auto-fit column widths and row heights.
 - `excel_freeze_panes(row, col, sheet_name)`: Freeze header rows and/or leading columns.
 - `excel_unfreeze_panes()`: Unfreeze panes.
@@ -83,13 +95,15 @@ A comprehensive **Model Context Protocol (MCP)** server for Windows enabling AI 
 - `excel_remove_duplicates(range_address, columns, has_headers)`: Deduplicate table rows.
 - `excel_get_column_summary(range_address)`: Instant statistical metrics (Sum, Count, Average, Min, Max).
 
-### 9. Page Setup & Printing
+### 9. Page Setup, Printing & Headers/Footers
 - `excel_set_page_setup(orientation, paper_size, fit_to_pages)`: Configure page orientation and 1-page fit.
+- `excel_set_header_footer(...)`: Configure custom printed headers and footers (&P page, &D date, etc.).
 - `excel_set_print_area(range_address)`: Set explicit print region.
 - `excel_clear_print_area()`: Clear print region.
 
-### 10. Images & Range Screenshots
+### 10. Images, Watermarks & Range Screenshots
 - `excel_add_image(image_path, cell, width, height)`: Insert image or logo onto worksheet.
+- `excel_add_watermark(text, font_size, color)`: Add semi-transparent diagonal watermark ('CONFIDENTIAL', 'DRAFT').
 - `excel_export_range_image(range_address, output_path)`: High-resolution PNG snapshot of a range.
 
 ### 11. Comments & Notes
@@ -116,8 +130,11 @@ A comprehensive **Model Context Protocol (MCP)** server for Windows enabling AI 
 - `excel_add_sparkline(data_range, location_cell, sparkline_type)`: Insert mini in-cell trend lines.
 - `excel_create_pivot_table(...)`: Dynamic native Pivot Table.
 
-### 15. Executive Components & Roadmaps
+### 15. Executive Components, Controls & Roadmaps
 - `excel_create_kpi_card(start_cell, title, value, subtitle, accent_color)`: Render 3-row executive KPI block.
+- `excel_add_metric_tile(cell, label, value, delta, status)`: Compact 2-row metric tile.
+- `excel_add_callout_box(cell, text, title, box_type)`: Executive alert banner shape.
+- `excel_add_checkbox(cell, caption, linked_cell)`: Form Control interactive checkbox.
 - `excel_create_gantt_block(start_cell, tasks, weeks_count)`: Render project Gantt timeline grid.
 
 ### 16. Headless OOXML Engine (openpyxl)
@@ -130,6 +147,8 @@ A comprehensive **Model Context Protocol (MCP)** server for Windows enabling AI 
 - `excel_audit_workbook(file_path)`: Deep structural inspection of an `.xlsx` file.
 - `excel_batch_replace(file_path, replacements, output_path)`: Batch replace template variables.
 - `excel_extract_column(file_path, column, sheet_name)`: Extract raw column values list.
+- `excel_extract_metadata(file_path)`: Extract OOXML document properties.
+- `excel_set_metadata(file_path, title, author, subject)`: Set/scrub document metadata.
 
 ---
 
@@ -141,9 +160,9 @@ Add to your MCP configuration (`~/.gemini/config/mcp_config.json` or Claude Desk
 {
   "mcpServers": {
     "excel": {
-      "command": "C:\\Users\\HP\\Desktop\\tkhrbi9\\mcps\\excel-mcp\\.venv\\Scripts\\python.exe",
+      "command": "C:\\Users\\HP\\Desktop\\excel-mcp\\.venv\\Scripts\\python.exe",
       "args": [
-        "C:\\Users\\HP\\Desktop\\tkhrbi9\\mcps\\excel-mcp\\server.py"
+        "C:\\Users\\HP\\Desktop\\excel-mcp\\server.py"
       ]
     }
   }

@@ -1400,6 +1400,320 @@ class ExcelController:
             "weeks": weeks_count
         }
 
+    # ── CELL STYLES & PRESETS ─────────────────────────────────────────────────
+
+    def apply_cell_style(self, range_address: str, style_name: str = "Good", sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Apply an official Excel built-in style ('Good', 'Bad', 'Neutral', 'Title', 'Heading 1', 'Total', 'Input', etc.)."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(range_address)
+        rng.Style = style_name
+        return {"status": "success", "range": range_address, "style": style_name}
+
+    def list_cell_styles(self) -> List[str]:
+        """List all available workbook cell styles."""
+        wb = self.get_workbook()
+        styles = []
+        try:
+            for s in wb.Styles:
+                styles.append(s.Name)
+        except Exception:
+            pass
+        return styles
+
+    def set_number_format_preset(self, range_address: str, preset: str = "currency_usd", sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Apply standard financial and business number format presets."""
+        preset_map = {
+            "currency_usd": "$#,##0.00",
+            "currency_eur": "#,##0.00 €",
+            "currency_mad": "#,##0.00 \"DH\"",
+            "currency_int": "$#,##0",
+            "percent": "0.0%",
+            "percent_int": "0%",
+            "accounting": "_($* #,##0.00_);_($* (#,##0.00);_($* \"-\"??_);_(@_)",
+            "date_short": "yyyy-mm-dd",
+            "date_long": "dd mmmm yyyy",
+            "integer": "#,##0",
+            "decimal_two": "0.00"
+        }
+        fmt = preset_map.get(preset.lower(), "$#,##0.00")
+        sheet = self.get_sheet(sheet_name)
+        sheet.Range(range_address).NumberFormat = fmt
+        return {"status": "success", "range": range_address, "preset": preset, "format": fmt}
+
+    # ── ADVANCED SHEET WORKFLOWS ──────────────────────────────────────────────
+
+    def duplicate_sheet(self, sheet_name: str, new_name: Optional[str] = None) -> Dict[str, Any]:
+        """Clone an existing worksheet with all formulas, charts, and styling intact."""
+        src_sheet = self.get_sheet(sheet_name)
+        src_sheet.Copy(After=src_sheet)
+        new_sheet = self.get_sheet()
+        if new_name:
+            new_sheet.Name = new_name[:31]
+        return {
+            "status": "success",
+            "source_sheet": sheet_name,
+            "new_sheet": new_sheet.Name
+        }
+
+    def move_sheet(self, sheet_name: str, before: Optional[str] = None, after: Optional[str] = None) -> Dict[str, Any]:
+        """Reorder worksheet tabs."""
+        wb = self.get_workbook()
+        target_sheet = self.get_sheet(sheet_name)
+        if before:
+            target_sheet.Move(Before=wb.Worksheets(before))
+        elif after:
+            target_sheet.Move(After=wb.Worksheets(after))
+        return {"status": "success", "moved_sheet": sheet_name}
+
+    def hide_unhide_sheet(self, sheet_name: str, hide: bool = True, very_hidden: bool = False) -> Dict[str, Any]:
+        """Hide or unhide a worksheet (very_hidden prevents unhiding from Excel UI)."""
+        sheet = self.get_sheet(sheet_name)
+        if not hide:
+            # -1 = xlSheetVisible
+            sheet.Visible = -1
+        else:
+            # 2 = xlSheetVeryHidden, 0 = xlSheetHidden
+            sheet.Visible = 2 if very_hidden else 0
+        return {"status": "success", "sheet": sheet_name, "visible_state": sheet.Visible}
+
+    # ── ADVANCED FORMULAS & CALCULATION ───────────────────────────────────────
+
+    def convert_formulas_to_values(self, range_address: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Convert formula cells into static values (freeze calculated data)."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(range_address)
+        rng.Value = rng.Value
+        return {"status": "success", "range": range_address, "message": "Formulas converted to static values."}
+
+    def evaluate_expression(self, expression: str) -> Dict[str, Any]:
+        """Evaluate an arbitrary Excel formula expression directly using Excel's calculation engine."""
+        app = self.get_app(bring_to_front=False)
+        result = app.Evaluate(expression)
+        return {
+            "status": "success",
+            "expression": expression,
+            "result": str(result)
+        }
+
+    # ── VIEW, ZOOM & WINDOW SETTINGS ──────────────────────────────────────────
+
+    def set_zoom(self, zoom_percentage: int = 100, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Set zoom scale (e.g. 75, 100, 120) for the active window."""
+        app = self.get_app(bring_to_front=False)
+        sheet = self.get_sheet(sheet_name)
+        sheet.Activate()
+        app.ActiveWindow.Zoom = max(10, min(400, zoom_percentage))
+        return {"status": "success", "zoom": app.ActiveWindow.Zoom}
+
+    def split_panes(self, row: Optional[int] = None, col: Optional[int] = None) -> Dict[str, Any]:
+        """Split or unsplit the window pane."""
+        app = self.get_app(bring_to_front=False)
+        win = app.ActiveWindow
+        if row is None and col is None:
+            win.Split = False
+            return {"status": "success", "split": False}
+        win.Split = True
+        if row:
+            win.SplitRow = row
+        if col:
+            win.SplitColumn = col
+        return {"status": "success", "split": True, "split_row": row, "split_col": col}
+
+    # ── EXECUTIVE VISUAL COMPONENTS ───────────────────────────────────────────
+
+    def add_callout_box(
+        self,
+        cell: str,
+        text: str,
+        title: Optional[str] = None,
+        box_type: str = "info",
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Insert a styled callout rectangle shape with colored accent."""
+        sheet = self.get_sheet(sheet_name)
+        target = sheet.Range(cell)
+
+        # 1 = msoShapeRectangle
+        shape = sheet.Shapes.AddShape(1, target.Left, target.Top, 350, 60)
+
+        # Palette
+        palette = {
+            "info": ("#EFF6FF", "#3B82F6", "#1E40AF"),      # bg, border, text
+            "warning": ("#FEFCE8", "#EAB308", "#854D0E"),
+            "success": ("#F0FDF4", "#22C55E", "#166534"),
+            "danger": ("#FEF2F2", "#EF4444", "#991B1B"),
+        }
+        bg, border, text_col = palette.get(box_type.lower(), palette["info"])
+
+        shape.Fill.Solid()
+        shape.Fill.ForeColor.RGB = hex_to_bgr_int(bg)
+        shape.Line.ForeColor.RGB = hex_to_bgr_int(border)
+        shape.Line.Weight = 1.5
+
+        full_text = f"{title.upper()}\n{text}" if title else text
+        tf = shape.TextFrame2
+        tf.TextRange.Text = full_text
+        tf.TextRange.Font.Fill.ForeColor.RGB = hex_to_bgr_int(text_col)
+        tf.TextRange.Font.Size = 10
+        tf.TextRange.Font.Name = "Segoe UI"
+
+        return {
+            "status": "success",
+            "cell": cell,
+            "box_type": box_type,
+            "shape_name": shape.Name
+        }
+
+    def add_metric_tile(
+        self,
+        cell: str,
+        label: str,
+        value: str,
+        delta: Optional[str] = None,
+        status: str = "positive",
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Create a compact 2-row metric tile."""
+        sheet = self.get_sheet(sheet_name)
+        top = sheet.Range(cell)
+        r, c = top.Row, top.Column
+
+        # Tile block (2x2)
+        tile_rng = sheet.Range(sheet.Cells(r, c), sheet.Cells(r + 1, c + 1))
+        tile_rng.Interior.Color = hex_to_bgr_int("#FFFFFF")
+
+        for b_id in [7, 8, 9, 10]:
+            try:
+                b = tile_rng.Borders(b_id)
+                b.LineStyle = 1
+                b.Weight = 2
+                b.Color = hex_to_bgr_int("#E2E8F0")
+            except Exception:
+                pass
+
+        # Label
+        lbl_cell = sheet.Cells(r, c)
+        lbl_cell.Value = label.upper()
+        lbl_cell.Font.Size = 8
+        lbl_cell.Font.Bold = True
+        lbl_cell.Font.Color = hex_to_bgr_int("#64748B")
+
+        # Value
+        val_cell = sheet.Cells(r + 1, c)
+        val_cell.Value = value
+        val_cell.Font.Size = 14
+        val_cell.Font.Bold = True
+        val_cell.Font.Color = hex_to_bgr_int("#0F172A")
+
+        # Delta
+        if delta:
+            d_cell = sheet.Cells(r + 1, c + 1)
+            d_cell.Value = delta
+            d_cell.Font.Size = 9
+            d_cell.Font.Bold = True
+            delta_color = "#059669" if status == "positive" else ("#DC2626" if status == "negative" else "#64748B")
+            d_cell.Font.Color = hex_to_bgr_int(delta_color)
+
+        return {"status": "success", "tile_range": tile_rng.Address, "label": label, "value": value}
+
+    # ── PRINT HEADERS, FOOTERS & HTML EXPORT ──────────────────────────────────
+
+    def set_header_footer(
+        self,
+        header_left: Optional[str] = None,
+        header_center: Optional[str] = None,
+        header_right: Optional[str] = None,
+        footer_left: Optional[str] = None,
+        footer_center: Optional[str] = None,
+        footer_right: Optional[str] = None,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Configure page header and footer strings (supports &P page, &N pages, &D date)."""
+        sheet = self.get_sheet(sheet_name)
+        ps = sheet.PageSetup
+
+        if header_left is not None:
+            ps.LeftHeader = header_left
+        if header_center is not None:
+            ps.CenterHeader = header_center
+        if header_right is not None:
+            ps.RightHeader = header_right
+        if footer_left is not None:
+            ps.LeftFooter = footer_left
+        if footer_center is not None:
+            ps.CenterFooter = footer_center
+        if footer_right is not None:
+            ps.RightFooter = footer_right
+
+        return {"status": "success", "sheet": sheet.Name, "message": "Headers and footers updated."}
+
+    def add_checkbox(
+        self,
+        cell: str,
+        caption: str = "Completed",
+        linked_cell: Optional[str] = None,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Insert an interactive Form Control Checkbox anchored at a cell."""
+        sheet = self.get_sheet(sheet_name)
+        target = sheet.Range(cell)
+
+        # xlCheckBox = 1
+        cb = sheet.CheckBoxes().Add(target.Left + 2, target.Top + 2, 100, target.Height - 4)
+        cb.Caption = caption
+        if linked_cell:
+            cb.LinkedCell = linked_cell
+
+        return {"status": "success", "cell": cell, "caption": caption, "linked_cell": linked_cell}
+
+    def export_html(self, output_path: str, sheet_only: bool = False) -> Dict[str, Any]:
+        """Export workbook or current sheet as a standalone HTML document."""
+        wb = self.get_workbook()
+        abs_path = os.path.abspath(output_path)
+        os.makedirs(os.path.dirname(abs_path), exist_ok=True)
+
+        app = self.get_app(bring_to_front=False)
+        app.DisplayAlerts = False
+        try:
+            # 44 = xlHtml
+            if sheet_only:
+                # 44 = xlHtml
+                wb.PublishObjects.Add(
+                    SourceType=4, # xlSourceSheet
+                    Filename=abs_path,
+                    Sheet=wb.ActiveSheet.Name,
+                    HtmlType=0 # xlHtmlStatic
+                ).Publish(True)
+            else:
+                wb.SaveAs(abs_path, 44)
+        finally:
+            app.DisplayAlerts = True
+
+        return {"status": "success", "output_path": abs_path}
+
+    def add_watermark(
+        self,
+        text: str = "CONFIDENTIAL",
+        font_size: int = 54,
+        color: str = "#E2E8F0",
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Add a semi-transparent diagonal watermark across the sheet."""
+        sheet = self.get_sheet(sheet_name)
+        # 0 = msoTextEffect1
+        art = sheet.Shapes.AddTextEffect(0, text, "Segoe UI", font_size, False, False, 150, 150)
+        art.Rotation = -35
+        art.Fill.Solid()
+        art.Fill.ForeColor.RGB = hex_to_bgr_int(color)
+        art.Line.Visible = False
+        return {"status": "success", "watermark": text, "shape": art.Name}
+
+    def clear_all_formatting(self, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Reset all formatting across the used range to standard defaults."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.UsedRange.ClearFormats()
+        return {"status": "success", "message": "All formatting cleared across used range."}
+
 
 # Singleton instance
 controller = ExcelController()
