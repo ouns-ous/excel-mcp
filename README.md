@@ -16,7 +16,7 @@ A comprehensive **Model Context Protocol (MCP)** server for Windows enabling AI 
 
 ---
 
-## 🛠️ Complete List of Tools (119 Tools)
+## 🛠️ Complete List of Tools (152 Tools)
 
 ### 1. Workbook & Window Management
 - `excel_status()`: Get current running state, open workbooks count, active sheet, active cell, and used range.
@@ -160,7 +160,51 @@ A comprehensive **Model Context Protocol (MCP)** server for Windows enabling AI 
 - `excel_add_checkbox(cell, caption, linked_cell)`: Form Control interactive checkbox.
 - `excel_create_gantt_block(start_cell, tasks, weeks_count)`: Render project Gantt timeline grid.
 
-### 18. Headless OOXML Engine (openpyxl)
+### 18. Print Titles, Margins & Page Break Controls
+- `excel_set_repeat_rows_cols(repeat_rows, repeat_cols)`: Set rows/columns to repeat on every printed page (Print Titles).
+- `excel_insert_page_break(cell)`: Insert a horizontal and vertical page break at cell.
+- `excel_reset_page_breaks()`: Reset all custom page breaks back to default.
+- `excel_set_sheet_margins(top, bottom, left, right, header, footer)`: Set precise printing and PDF margins in inches.
+- `excel_set_sheet_orientation_and_paper(orientation, paper_size)`: Set portrait/landscape and A4/Letter/Legal paper size.
+- `excel_set_sheet_fit_to_pages(fit_to_wide, fit_to_tall)`: Fit sheet to an exact number of pages wide and tall.
+
+### 19. Calculation Modes & Data Transformations
+- `excel_set_calculation_mode(mode)`: Switch calculation engine between 'automatic', 'manual', and 'semiautomatic'.
+- `excel_get_calculation_mode()`: Read current calculation engine state.
+- `excel_transpose_range(source_range, target_start_cell)`: Transpose matrix rows into columns.
+- `excel_fill_series(start_range, fill_range, series_type, step, stop)`: Auto-fill linear, growth, or date series.
+- `excel_set_view_mode(mode)`: Switch view between 'normal', 'page_break_preview', and 'page_layout'.
+
+### 20. Advanced What-If Sensitivity & Scenarios
+- `excel_create_two_variable_data_table(table_range, row_input_cell, col_input_cell)`: Generate a 2-variable sensitivity Data Table matrix.
+- `excel_add_scenario(name, changing_cells, values, comment)`: Create a What-If Scenario with varying cell values.
+- `excel_show_scenario(name)`: Apply and display a saved What-If Scenario on the worksheet.
+- `excel_list_scenarios()`: List all What-If Scenarios saved on the worksheet.
+
+### 21. Interactive Table Slicers & Conversions
+- `excel_add_table_slicer(table_name, column_name, slicer_name, left, top, width, height)`: Insert an interactive graphic visual Slicer button box.
+- `excel_convert_table_to_range(table_name)`: Convert an official Excel Table back to a standard cell range.
+
+### 22. External Data Connections & Power Query
+- `excel_refresh_all_connections()`: Refresh all external data connections, Power Query queries, and PivotTables.
+- `excel_get_data_connections()`: List all external data connections (ODBC, OLEDB, Power Query) in the workbook.
+- `excel_refresh_connection(connection_name)`: Refresh a specific external data connection by name.
+
+### 23. Chart Customization & Visual Export
+- `excel_set_chart_secondary_axis(chart_name, series_index)`: Move a chart series to the secondary vertical (Y) axis.
+- `excel_add_chart_trendline(chart_name, series_index, trendline_type)`: Add a trendline (linear, exponential, moving average).
+- `excel_export_chart_as_image(chart_name, output_image_path)`: Export a specific chart as high-resolution PNG or JPG.
+
+### 24. Cell Inspection, Auditing & Content Clearing
+- `excel_get_formula_errors()`: Scan worksheet and return all cells with errors (#DIV/0!, #N/A, #VALUE!).
+- `excel_find_cells_with_comments()`: Find and return all cells containing notes or comments.
+- `excel_find_cells_with_data_validation()`: Find all cells with Data Validation rules applied.
+- `excel_get_merged_ranges()`: List all merged cell areas on the worksheet.
+- `excel_clear_cell_contents(range_address)`: Clear values and formulas while keeping formatting intact.
+- `excel_clear_cell_formats(range_address)`: Clear styling while keeping values and formulas intact.
+- `excel_export_sheet_to_csv(output_path)`: Direct COM export of active sheet to CSV.
+
+### 25. Headless OOXML Engine (openpyxl)
 - `excel_create_from_markdown(markdown_table, output_path, sheet_name)`: Convert Markdown table to styled `.xlsx`.
 - `excel_read_to_markdown(file_path, sheet_name)`: Read `.xlsx` table into clean Markdown.
 - `excel_json_to_sheet(json_data, output_path, sheet_name)`: Export JSON records to styled `.xlsx`.
@@ -172,6 +216,9 @@ A comprehensive **Model Context Protocol (MCP)** server for Windows enabling AI 
 - `excel_extract_column(file_path, column, sheet_name)`: Extract raw column values list.
 - `excel_extract_metadata(file_path)`: Extract OOXML document properties.
 - `excel_set_metadata(file_path, title, author, subject)`: Set/scrub document metadata.
+- `excel_compare_two_workbooks(file_path_1, file_path_2)`: Compare two `.xlsx` files and return structural and cell differences.
+- `excel_extract_hyperlinks(file_path)`: Extract all embedded hyperlinks and URLs headlessly.
+- `excel_unhide_all_sheets_headless(file_path, output_path)`: Unhide all hidden and very hidden worksheets headlessly.
 
 ---
 
@@ -212,4 +259,8 @@ uv run python test_super_tools.py
 
 # Power Tools: Grouping, Outlines, Top/Bottom Rules, Icon Sets, Tracer Arrows, Shapes
 uv run python test_power_tools.py
+
+# Ultra Tools: Workbook Comparison, Hyperlinks, Sheet Unhiding
+uv run python test_ultra_tools.py
 ```
+

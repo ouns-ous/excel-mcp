@@ -1953,6 +1953,436 @@ class ExcelController:
         sheet.Range(range_address).Locked = locked
         return {"status": "success", "range": range_address, "locked": locked}
 
+    # ── ADVANCED PRINTING & PAGE LAYOUT TITLES ────────────────────────────────
+
+    def set_repeat_rows_cols(
+        self,
+        repeat_rows: Optional[str] = None,
+        repeat_cols: Optional[str] = None,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Set repeating header rows and/or columns for multi-page printouts (Print Titles)."""
+        sheet = self.get_sheet(sheet_name)
+        if repeat_rows is not None:
+            sheet.PageSetup.PrintTitleRows = repeat_rows
+        if repeat_cols is not None:
+            sheet.PageSetup.PrintTitleColumns = repeat_cols
+        return {"status": "success", "repeat_rows": repeat_rows, "repeat_cols": repeat_cols}
+
+    def insert_page_break(self, before_cell: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Insert manual horizontal and vertical page breaks before a specific cell."""
+        sheet = self.get_sheet(sheet_name)
+        target = sheet.Range(before_cell)
+        sheet.HPageBreaks.Add(Before=target)
+        sheet.VPageBreaks.Add(Before=target)
+        return {"status": "success", "before_cell": before_cell, "message": "Page break inserted."}
+
+    def reset_page_breaks(self, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Reset all manual page breaks back to default pagination."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.ResetAllPageBreaks()
+        return {"status": "success", "message": "All manual page breaks reset."}
+
+    # ── CALCULATION ENGINE MODES ──────────────────────────────────────────────
+
+    def set_calculation_mode(self, mode: str = "automatic") -> Dict[str, Any]:
+        """Configure Excel calculation mode ('automatic', 'manual', or 'semiautomatic')."""
+        app = self.get_app(bring_to_front=False)
+        # xlCalculationAutomatic = -4105, xlCalculationManual = -4135, xlCalculationSemiautomatic = 2
+        mode_map = {
+            "automatic": -4105,
+            "manual": -4135,
+            "semiautomatic": 2
+        }
+        val = mode_map.get(mode.lower(), -4105)
+        app.Calculation = val
+        return {"status": "success", "mode": mode, "calculation_val": val}
+
+    def get_calculation_mode(self) -> Dict[str, Any]:
+        """Get current Excel calculation mode."""
+        app = self.get_app(bring_to_front=False)
+        inv_map = {-4105: "automatic", -4135: "manual", 2: "semiautomatic"}
+        return {"status": "success", "mode": inv_map.get(app.Calculation, "unknown")}
+
+    # ── DATA TRANSFORMATIONS & ADVANCED UTILITIES ─────────────────────────────
+
+    def transpose_range(self, source_range: str, dest_cell: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Transpose (swap rows and columns) of a cell range to a destination cell."""
+        sheet = self.get_sheet(sheet_name)
+        src = sheet.Range(source_range)
+        src.Copy()
+        dest = sheet.Range(dest_cell)
+        # xlPasteAll = -4104, xlPasteSpecialOperationNone = -4142
+        dest.PasteSpecial(Paste=-4104, Operation=-4142, SkipBlanks=False, Transpose=True)
+        self.get_app(bring_to_front=False).CutCopyMode = False
+        return {"status": "success", "source": source_range, "destination": dest_cell}
+
+    def fill_series(self, range_address: str, fill_type: str = "linear", step: float = 1.0, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Auto-fill a sequence or series (linear, growth, date)."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(range_address)
+        # xlDataSeriesLinear = -4132, xlGrowth = 2, xlChronological = 3
+        type_map = {"linear": -4132, "growth": 2, "date": 3}
+        xl_type = type_map.get(fill_type.lower(), -4132)
+        # xlRows = 1, xlColumns = 2
+        series_by = 1 if rng.Rows.Count == 1 else 2
+        rng.DataSeries(Rowcol=series_by, Type=xl_type, Step=step)
+        return {"status": "success", "range": range_address, "fill_type": fill_type, "step": step}
+
+    # ── ADVANCED WINDOW & VIEW PERSPECTIVES ────────────────────────────────────
+
+    def set_view_mode(self, view_mode: str = "normal", sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Set workbook view mode: 'normal', 'page_break_preview', or 'page_layout'."""
+        app = self.get_app(bring_to_front=False)
+        sheet = self.get_sheet(sheet_name)
+        sheet.Activate()
+        # xlNormalView = 1, xlPageBreakPreview = 2, xlPageLayoutView = 3
+        view_map = {"normal": 1, "page_break_preview": 2, "page_layout": 3}
+        val = view_map.get(view_mode.lower(), 1)
+        app.ActiveWindow.View = val
+        return {"status": "success", "view_mode": view_mode}
+
+    def get_formula_errors(self, sheet_name: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Scan sheet for formula errors like #DIV/0!, #N/A, #VALUE!, #REF!, #NAME?."""
+        sheet = self.get_sheet(sheet_name)
+        errors = []
+        try:
+            # 16 = xlErrors
+            error_cells = sheet.UsedRange.SpecialCells(-4123, 16)
+            for c in error_cells:
+                errors.append({
+                    "cell": c.Address,
+                    "formula": str(c.Formula),
+                    "error_text": str(c.Text)
+                })
+        except Exception:
+            pass
+        return errors
+
+    # ── ADVANCED SENSITIVITY WHAT-IF: DATA TABLES ─────────────────────────────
+
+    def create_two_variable_data_table(
+        self,
+        table_range: str,
+        row_input_cell: str,
+        col_input_cell: str,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Generate a 2-variable sensitivity Data Table matrix (e.g. Price vs Volume sensitivity)."""
+        sheet = self.get_sheet(sheet_name)
+        tbl_rng = sheet.Range(table_range)
+        row_inp = sheet.Range(row_input_cell)
+        col_inp = sheet.Range(col_input_cell)
+        tbl_rng.Table(RowInput=row_inp, ColumnInput=col_inp)
+        return {
+            "status": "success",
+            "table_range": table_range,
+            "row_input_cell": row_input_cell,
+            "col_input_cell": col_input_cell
+        }
+
+    # ── EXECUTIVE NATIVE SLICERS & FILTER ENHANCEMENTS ────────────────────────
+
+    def add_table_slicer(
+        self,
+        table_name: str,
+        column_name: str,
+        slicer_name: Optional[str] = None,
+        left: float = 400,
+        top: float = 60,
+        width: float = 160,
+        height: float = 220,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Insert an interactive graphic visual Slicer button box for an Excel Table."""
+        sheet = self.get_sheet(sheet_name)
+        wb = self.get_workbook()
+        tbl = sheet.ListObjects(table_name)
+        s_name = slicer_name or f"Slicer_{column_name}"
+        sc = wb.SlicerCaches.Add2(tbl, column_name)
+        slicer = sc.Slicers.Add(sheet, Top=top, Left=left, Width=width, Height=height, Name=s_name)
+        return {"status": "success", "table": table_name, "column": column_name, "slicer_name": slicer.Name}
+
+    def convert_table_to_range(self, table_name: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Convert an official Excel Table back to a standard cell range (keeps all data & formatting)."""
+        sheet = self.get_sheet(sheet_name)
+        tbl = sheet.ListObjects(table_name)
+        addr = tbl.Range.Address
+        tbl.Unlist()
+        return {"status": "success", "table_converted": table_name, "range": addr}
+
+    # ── SHEET EXPORT & CELL CONTENT CLEARING ──────────────────────────────────
+
+    def export_sheet_to_csv(self, output_path: str, sheet_name: Optional[str] = None) -> str:
+        """Export the active worksheet directly to a CSV file."""
+        sheet = self.get_sheet(sheet_name)
+        abs_out = os.path.abspath(output_path)
+        os.makedirs(os.path.dirname(abs_out), exist_ok=True)
+        app = self.get_app(bring_to_front=False)
+        app.DisplayAlerts = False
+        try:
+            # Copy to temp new workbook, then save as CSV (xlCSV = 6)
+            sheet.Copy()
+            new_wb = app.ActiveWorkbook
+            new_wb.SaveAs(abs_out, 6)
+            new_wb.Close(SaveChanges=False)
+        finally:
+            app.DisplayAlerts = True
+        return abs_out
+
+    def get_merged_ranges(self, sheet_name: Optional[str] = None) -> List[str]:
+        """Find and list all merged cell range addresses on the worksheet."""
+        sheet = self.get_sheet(sheet_name)
+        merged = []
+        seen = set()
+        for cell in sheet.UsedRange:
+            try:
+                if cell.MergeCells:
+                    ma = cell.MergeArea.Address
+                    if ma not in seen:
+                        seen.add(ma)
+                        merged.append(ma)
+            except Exception:
+                pass
+        return merged
+
+    def clear_cell_contents(self, range_address: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Clear values and formulas in a range while keeping cell formatting intact."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Range(range_address).ClearContents()
+        return {"status": "success", "range": range_address, "cleared": "contents"}
+
+    def clear_cell_formats(self, range_address: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Clear cell formatting (colors, borders, styles) while keeping values and formulas intact."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Range(range_address).ClearFormats()
+        return {"status": "success", "range": range_address, "cleared": "formats"}
+
+    # ── DATA CONNECTIONS & POWER QUERY ────────────────────────────────────────
+
+    def refresh_all_connections(self) -> Dict[str, Any]:
+        """Refresh all external data connections, queries, and PivotTables in the workbook."""
+        wb = self.get_workbook()
+        wb.RefreshAll()
+        return {"status": "success", "refreshed": "all_connections"}
+
+    def get_data_connections(self) -> List[Dict[str, Any]]:
+        """List all external data connections (ODBC, OLEDB, Power Query) in the workbook."""
+        wb = self.get_workbook()
+        conns = []
+        for c in wb.Connections:
+            try:
+                conns.append({
+                    "name": c.Name,
+                    "type": getattr(c, "Type", None),
+                    "description": getattr(c, "Description", "")
+                })
+            except Exception:
+                pass
+        return conns
+
+    def refresh_connection(self, connection_name: str) -> Dict[str, Any]:
+        """Refresh a specific data connection by name."""
+        wb = self.get_workbook()
+        wb.Connections(connection_name).Refresh()
+        return {"status": "success", "connection_refreshed": connection_name}
+
+    # ── ADVANCED CHART CUSTOMIZATION & EXPORT ──────────────────────────────────
+
+    def set_chart_secondary_axis(
+        self,
+        chart_name: str,
+        series_index: int = 2,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Move a chart data series to the secondary vertical (Y) axis."""
+        sheet = self.get_sheet(sheet_name)
+        chart = sheet.ChartObjects(chart_name).Chart
+        series = chart.SeriesCollection(series_index)
+        # xlSecondary = 2
+        series.AxisGroup = 2
+        return {"status": "success", "chart": chart_name, "series_index": series_index, "axis_group": "secondary"}
+
+    def add_chart_trendline(
+        self,
+        chart_name: str,
+        series_index: int = 1,
+        trendline_type: str = "linear",
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Add a trendline (linear, exponential, logarithmic, moving_average, polynomial) to a chart series."""
+        sheet = self.get_sheet(sheet_name)
+        chart = sheet.ChartObjects(chart_name).Chart
+        series = chart.SeriesCollection(series_index)
+        type_map = {
+            "linear": -4132,          # xlLinear
+            "exponential": 1,         # xlExponential
+            "logarithmic": -4133,     # xlLogarithmic
+            "moving_average": 4,      # xlMovingAvg
+            "polynomial": 6           # xlPolynomial
+        }
+        xl_t = type_map.get(trendline_type.lower(), -4132)
+        trend = series.Trendlines().Add(Type=xl_t)
+        return {"status": "success", "chart": chart_name, "series": series_index, "trendline_type": trendline_type}
+
+    def export_chart_as_image(
+        self,
+        chart_name: str,
+        output_image_path: str,
+        sheet_name: Optional[str] = None
+    ) -> str:
+        """Export a specific chart as a high-resolution PNG or JPG image file."""
+        sheet = self.get_sheet(sheet_name)
+        chart = sheet.ChartObjects(chart_name).Chart
+        abs_out = os.path.abspath(output_image_path)
+        os.makedirs(os.path.dirname(abs_out), exist_ok=True)
+        chart.Export(abs_out)
+        return abs_out
+
+    # ── WHAT-IF SCENARIO MANAGER ──────────────────────────────────────────────
+
+    def add_scenario(
+        self,
+        name: str,
+        changing_cells: str,
+        values: List[Any],
+        comment: str = "",
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Create a What-If Scenario with defined changing cell values (e.g. Best Case, Worst Case)."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(changing_cells)
+        sheet.Scenarios.Create(name, rng, values, comment)
+        return {"status": "success", "scenario": name, "changing_cells": changing_cells, "values": values}
+
+    def show_scenario(self, name: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Apply and display a saved What-If Scenario on the worksheet."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Scenarios(name).Show()
+        return {"status": "success", "scenario_applied": name}
+
+    def list_scenarios(self, sheet_name: Optional[str] = None) -> List[Dict[str, Any]]:
+        """List all What-If Scenarios saved on the worksheet."""
+        sheet = self.get_sheet(sheet_name)
+        scs = []
+        for s in sheet.Scenarios:
+            try:
+                scs.append({
+                    "name": s.Name,
+                    "comment": getattr(s, "Comment", ""),
+                    "changing_cells": s.ChangingCells.Address
+                })
+            except Exception:
+                pass
+        return scs
+
+    # ── CELL INSPECTION & AUDITING TOOLS ──────────────────────────────────────
+
+    def find_cells_with_comments(self, sheet_name: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Find and return all cells containing comments or notes on the sheet."""
+        sheet = self.get_sheet(sheet_name)
+        res = []
+        try:
+            # -4144 = xlCellTypeComments
+            cells = sheet.UsedRange.SpecialCells(-4144)
+            for c in cells:
+                c_text = ""
+                try:
+                    if c.Comment:
+                        c_text = c.Comment.Text()
+                except Exception:
+                    pass
+                res.append({
+                    "cell": c.Address,
+                    "value": str(c.Value),
+                    "comment": c_text
+                })
+        except Exception:
+            pass
+        return res
+
+    def find_cells_with_data_validation(self, sheet_name: Optional[str] = None) -> List[str]:
+        """Find and return all cell addresses that have Data Validation rules applied."""
+        sheet = self.get_sheet(sheet_name)
+        addresses = []
+        try:
+            # -4174 = xlCellTypeAllValidation
+            cells = sheet.UsedRange.SpecialCells(-4174)
+            for c in cells:
+                addresses.append(c.Address)
+        except Exception:
+            pass
+        return addresses
+
+    # ── ADVANCED PAGE SETUP & PRINT METRICS ────────────────────────────────────
+
+    def set_sheet_margins(
+        self,
+        top_inches: float = 0.75,
+        bottom_inches: float = 0.75,
+        left_inches: float = 0.7,
+        right_inches: float = 0.7,
+        header_inches: float = 0.3,
+        footer_inches: float = 0.3,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Configure page margins in inches for printing or PDF export."""
+        sheet = self.get_sheet(sheet_name)
+        ps = sheet.PageSetup
+        ps.TopMargin = self.app.InchesToPoints(top_inches)
+        ps.BottomMargin = self.app.InchesToPoints(bottom_inches)
+        ps.LeftMargin = self.app.InchesToPoints(left_inches)
+        ps.RightMargin = self.app.InchesToPoints(right_inches)
+        ps.HeaderMargin = self.app.InchesToPoints(header_inches)
+        ps.FooterMargin = self.app.InchesToPoints(footer_inches)
+        return {
+            "status": "success",
+            "margins": {
+                "top": top_inches,
+                "bottom": bottom_inches,
+                "left": left_inches,
+                "right": right_inches,
+                "header": header_inches,
+                "footer": footer_inches
+            }
+        }
+
+    def set_sheet_orientation_and_paper(
+        self,
+        orientation: str = "landscape",
+        paper_size: str = "A4",
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Set page orientation ('portrait' or 'landscape') and paper size ('A4', 'Letter', 'Legal')."""
+        sheet = self.get_sheet(sheet_name)
+        ps = sheet.PageSetup
+        # xlPortrait = 1, xlLandscape = 2
+        ps.Orientation = 2 if orientation.lower() == "landscape" else 1
+
+        # xlPaperLetter = 1, xlPaperLegal = 5, xlPaperA4 = 9, xlPaperA3 = 8
+        paper_map = {
+            "letter": 1,
+            "legal": 5,
+            "a4": 9,
+            "a3": 8
+        }
+        ps.PaperSize = paper_map.get(paper_size.lower(), 9)
+        return {"status": "success", "orientation": orientation, "paper_size": paper_size}
+
+    def set_sheet_fit_to_pages(
+        self,
+        fit_to_wide: int = 1,
+        fit_to_tall: int = 1,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Fit worksheet to a specific number of pages wide and tall for printing / PDF export."""
+        sheet = self.get_sheet(sheet_name)
+        ps = sheet.PageSetup
+        ps.Zoom = False
+        ps.FitToPagesWide = fit_to_wide
+        ps.FitToPagesTall = fit_to_tall
+        return {"status": "success", "fit_to_wide": fit_to_wide, "fit_to_tall": fit_to_tall}
+
 
 # Singleton instance
 controller = ExcelController()

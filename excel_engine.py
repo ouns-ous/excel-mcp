@@ -304,3 +304,80 @@ class ExcelEngine:
         os.makedirs(os.path.dirname(dest), exist_ok=True)
         wb.save(dest)
         return dest
+
+    @staticmethod
+    def compare_two_workbooks(file_path_1: str, file_path_2: str) -> Dict[str, Any]:
+        """Compare two .xlsx workbooks headlessly and return structural and cell value differences."""
+        f1 = os.path.abspath(file_path_1)
+        f2 = os.path.abspath(file_path_2)
+        wb1 = openpyxl.load_workbook(f1, data_only=True)
+        wb2 = openpyxl.load_workbook(f2, data_only=True)
+
+        sheets1 = set(wb1.sheetnames)
+        sheets2 = set(wb2.sheetnames)
+
+        diffs = {
+            "file_1": f1,
+            "file_2": f2,
+            "only_in_file_1": list(sheets1 - sheets2),
+            "only_in_file_2": list(sheets2 - sheets1),
+            "cell_differences": []
+        }
+
+        common_sheets = sheets1.intersection(sheets2)
+        for s in common_sheets:
+            ws1 = wb1[s]
+            ws2 = wb2[s]
+            max_r = max(ws1.max_row or 0, ws2.max_row or 0)
+            max_c = max(ws1.max_column or 0, ws2.max_column or 0)
+
+            for r in range(1, max_r + 1):
+                for c in range(1, max_c + 1):
+                    v1 = ws1.cell(row=r, column=c).value
+                    v2 = ws2.cell(row=r, column=c).value
+                    if v1 != v2:
+                        diffs["cell_differences"].append({
+                            "sheet": s,
+                            "cell": f"{get_column_letter(c)}{r}",
+                            "file_1_val": str(v1) if v1 is not None else None,
+                            "file_2_val": str(v2) if v2 is not None else None
+                        })
+                        if len(diffs["cell_differences"]) >= 200:
+                            diffs["truncated"] = True
+                            return diffs
+
+        return diffs
+
+    @staticmethod
+    def extract_hyperlinks(file_path: str, sheet_name: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Extract all embedded URLs and hyperlinks from an .xlsx workbook headlessly."""
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        sheets = [wb[sheet_name]] if sheet_name and sheet_name in wb.sheetnames else wb.worksheets
+
+        links = []
+        for ws in sheets:
+            for row in ws.iter_rows():
+                for cell in row:
+                    if cell.hyperlink and cell.hyperlink.target:
+                        links.append({
+                            "sheet": ws.title,
+                            "cell": cell.coordinate,
+                            "text": str(cell.value) if cell.value else "",
+                            "target": str(cell.hyperlink.target)
+                        })
+        return links
+
+    @staticmethod
+    def unhide_all_sheets_headless(file_path: str, output_path: Optional[str] = None) -> str:
+        """Unhide all hidden and very hidden worksheets headlessly."""
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        for ws in wb.worksheets:
+            ws.sheet_state = "visible"
+
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return dest
+

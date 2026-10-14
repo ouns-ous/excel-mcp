@@ -1682,6 +1682,461 @@ def excel_lock_unlock_cells(range_address: str, locked: bool = True, sheet_name:
     return controller.lock_unlock_cells(range_address=range_address, locked=locked, sheet_name=sheet_name)
 
 
+# ── ADVANCED PRINTING & PAGE LAYOUT TITLES ──────────────────────────────────────
+
+@mcp.tool()
+def excel_set_repeat_rows_cols(
+    repeat_rows: Optional[str] = None,
+    repeat_cols: Optional[str] = None,
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Set repeating header rows and/or columns for multi-page printouts (Print Titles, e.g. '$1:$1').
+    Args:
+        repeat_rows: Row range string (e.g. '$1:$2').
+        repeat_cols: Column range string (e.g. '$A:$A').
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.set_repeat_rows_cols(repeat_rows=repeat_rows, repeat_cols=repeat_cols, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_insert_page_break(before_cell: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Insert manual horizontal and vertical page breaks before a specific cell.
+    Args:
+        before_cell: Anchor cell coordinate (e.g. 'A25').
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.insert_page_break(before_cell=before_cell, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_reset_page_breaks(sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Reset all manual page breaks back to default pagination.
+    Args:
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.reset_page_breaks(sheet_name=sheet_name)
+
+
+# ── CALCULATION ENGINE MODES ────────────────────────────────────────────────────
+
+@mcp.tool()
+def excel_set_calculation_mode(mode: str = "automatic") -> Dict[str, Any]:
+    """Configure Excel calculation mode ('automatic', 'manual', or 'semiautomatic').
+    Args:
+        mode: Calculation engine mode ('automatic', 'manual', 'semiautomatic').
+    """
+    return controller.set_calculation_mode(mode=mode)
+
+
+@mcp.tool()
+def excel_get_calculation_mode() -> Dict[str, Any]:
+    """Get current Excel calculation mode."""
+    return controller.get_calculation_mode()
+
+
+# ── DATA TRANSFORMATIONS & UTILITIES ────────────────────────────────────────────
+
+@mcp.tool()
+def excel_transpose_range(source_range: str, dest_cell: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Transpose (swap rows and columns) of a cell range to a destination cell.
+    Args:
+        source_range: Source range (e.g. 'B2:F3').
+        dest_cell: Target top-left cell (e.g. 'H2').
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.transpose_range(source_range=source_range, dest_cell=dest_cell, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_fill_series(range_address: str, fill_type: str = "linear", step: float = 1.0, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Auto-fill a sequence or series (linear numbers, growth exponential, or dates).
+    Args:
+        range_address: Target series range (e.g. 'A1:A20').
+        fill_type: 'linear', 'growth', or 'date'.
+        step: Increment step value (default 1.0).
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.fill_series(range_address=range_address, fill_type=fill_type, step=step, sheet_name=sheet_name)
+
+
+# ── VIEW MODES & AUDITING ───────────────────────────────────────────────────────
+
+@mcp.tool()
+def excel_set_view_mode(view_mode: str = "normal", sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Set window view mode: 'normal', 'page_break_preview', or 'page_layout'.
+    Args:
+        view_mode: 'normal', 'page_break_preview', or 'page_layout'.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.set_view_mode(view_mode=view_mode, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_get_formula_errors(sheet_name: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Scan and list all formula error cells (#DIV/0!, #N/A, #VALUE!, #REF!) across the worksheet.
+    Args:
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.get_formula_errors(sheet_name=sheet_name)
+
+
+# ── WHAT-IF DATA TABLES & SLICERS ───────────────────────────────────────────────
+
+@mcp.tool()
+def excel_create_two_variable_data_table(
+    table_range: str,
+    row_input_cell: str,
+    col_input_cell: str,
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Generate a 2-variable sensitivity Data Table matrix (e.g. Price vs Volume sensitivity).
+    Args:
+        table_range: Data table range matrix (e.g. 'B4:F10').
+        row_input_cell: Target input cell for row variables (e.g. 'B1').
+        col_input_cell: Target input cell for column variables (e.g. 'B2').
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.create_two_variable_data_table(
+        table_range=table_range,
+        row_input_cell=row_input_cell,
+        col_input_cell=col_input_cell,
+        sheet_name=sheet_name
+    )
+
+
+@mcp.tool()
+def excel_add_table_slicer(
+    table_name: str,
+    column_name: str,
+    slicer_name: Optional[str] = None,
+    left: float = 400,
+    top: float = 60,
+    width: float = 160,
+    height: float = 220,
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Insert an interactive graphic visual Slicer button box for filtering an Excel Table.
+    Args:
+        table_name: Name of the table.
+        column_name: Column to create slicer for.
+        slicer_name: Optional custom slicer identifier.
+        left: Horizontal position offset in points.
+        top: Vertical position offset in points.
+        width: Slicer width.
+        height: Slicer height.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.add_table_slicer(
+        table_name=table_name,
+        column_name=column_name,
+        slicer_name=slicer_name,
+        left=left,
+        top=top,
+        width=width,
+        height=height,
+        sheet_name=sheet_name
+    )
+
+
+@mcp.tool()
+def excel_convert_table_to_range(table_name: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Convert an official Excel Table back to a standard cell range (keeps data & formatting).
+    Args:
+        table_name: Name of the table to convert.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.convert_table_to_range(table_name=table_name, sheet_name=sheet_name)
+
+
+# ── SHEET EXPORT & CELL CONTENT CLEARING ────────────────────────────────────────
+
+@mcp.tool()
+def excel_export_sheet_to_csv(output_path: str, sheet_name: Optional[str] = None) -> str:
+    """Export the active worksheet directly to a CSV file.
+    Args:
+        output_path: Destination path for the CSV file.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.export_sheet_to_csv(output_path=output_path, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_get_merged_ranges(sheet_name: Optional[str] = None) -> List[str]:
+    """Find and list all merged cell range addresses on the worksheet.
+    Args:
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.get_merged_ranges(sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_clear_cell_contents(range_address: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Clear values and formulas in a range while keeping cell formatting intact.
+    Args:
+        range_address: Target cell range (e.g. 'A2:C20').
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.clear_cell_contents(range_address=range_address, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_clear_cell_formats(range_address: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Clear cell formatting (colors, borders, styles) while keeping values and formulas intact.
+    Args:
+        range_address: Target cell range (e.g. 'A2:C20').
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.clear_cell_formats(range_address=range_address, sheet_name=sheet_name)
+
+
+
+# ── DATA CONNECTIONS & POWER QUERY ──────────────────────────────────────────────
+
+@mcp.tool()
+def excel_refresh_all_connections() -> Dict[str, Any]:
+    """Refresh all external data connections, Power Query queries, and PivotTables in the workbook."""
+    return controller.refresh_all_connections()
+
+
+@mcp.tool()
+def excel_get_data_connections() -> List[Dict[str, Any]]:
+    """List all external data connections (ODBC, OLEDB, Power Query) in the workbook."""
+    return controller.get_data_connections()
+
+
+@mcp.tool()
+def excel_refresh_connection(connection_name: str) -> Dict[str, Any]:
+    """Refresh a specific external data connection by name.
+    Args:
+        connection_name: Name of the connection to refresh.
+    """
+    return controller.refresh_connection(connection_name=connection_name)
+
+
+# ── ADVANCED CHART CUSTOMIZATION & EXPORT ────────────────────────────────────────
+
+@mcp.tool()
+def excel_set_chart_secondary_axis(
+    chart_name: str,
+    series_index: int = 2,
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Move a chart data series to the secondary vertical (Y) axis.
+    Args:
+        chart_name: Name of the chart object.
+        series_index: 1-based index of the series to move.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.set_chart_secondary_axis(chart_name=chart_name, series_index=series_index, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_add_chart_trendline(
+    chart_name: str,
+    series_index: int = 1,
+    trendline_type: str = "linear",
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Add a trendline (linear, exponential, logarithmic, moving_average, polynomial) to a chart series.
+    Args:
+        chart_name: Name of the chart object.
+        series_index: 1-based index of the series to add trendline to.
+        trendline_type: Trendline type ('linear', 'exponential', 'logarithmic', 'moving_average', 'polynomial').
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.add_chart_trendline(
+        chart_name=chart_name,
+        series_index=series_index,
+        trendline_type=trendline_type,
+        sheet_name=sheet_name
+    )
+
+
+@mcp.tool()
+def excel_export_chart_as_image(
+    chart_name: str,
+    output_image_path: str,
+    sheet_name: Optional[str] = None
+) -> str:
+    """Export a specific chart as a high-resolution PNG or JPG image file.
+    Args:
+        chart_name: Name of the chart object.
+        output_image_path: Destination path for the image (e.g. 'chart.png').
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.export_chart_as_image(chart_name=chart_name, output_image_path=output_image_path, sheet_name=sheet_name)
+
+
+# ── WHAT-IF SCENARIO MANAGER ────────────────────────────────────────────────────
+
+@mcp.tool()
+def excel_add_scenario(
+    name: str,
+    changing_cells: str,
+    values: List[Any],
+    comment: str = "",
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Create a What-If Scenario with defined changing cell values (e.g. Best Case, Worst Case).
+    Args:
+        name: Name of the scenario.
+        changing_cells: Range address of cells that vary (e.g. 'B2:B4').
+        values: List of values to apply to changing cells in this scenario.
+        comment: Optional scenario description.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.add_scenario(
+        name=name,
+        changing_cells=changing_cells,
+        values=values,
+        comment=comment,
+        sheet_name=sheet_name
+    )
+
+
+@mcp.tool()
+def excel_show_scenario(name: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Apply and display a saved What-If Scenario on the worksheet.
+    Args:
+        name: Name of the scenario to activate.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.show_scenario(name=name, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_list_scenarios(sheet_name: Optional[str] = None) -> List[Dict[str, Any]]:
+    """List all What-If Scenarios saved on the worksheet.
+    Args:
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.list_scenarios(sheet_name=sheet_name)
+
+
+# ── CELL INSPECTION & AUDITING TOOLS ────────────────────────────────────────────
+
+@mcp.tool()
+def excel_find_cells_with_comments(sheet_name: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Find and return all cells containing comments or notes on the sheet.
+    Args:
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.find_cells_with_comments(sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_find_cells_with_data_validation(sheet_name: Optional[str] = None) -> List[str]:
+    """Find and return all cell addresses that have Data Validation rules applied.
+    Args:
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.find_cells_with_data_validation(sheet_name=sheet_name)
+
+
+# ── ADVANCED PAGE SETUP & PRINT METRICS ──────────────────────────────────────────
+
+@mcp.tool()
+def excel_set_sheet_margins(
+    top_inches: float = 0.75,
+    bottom_inches: float = 0.75,
+    left_inches: float = 0.7,
+    right_inches: float = 0.7,
+    header_inches: float = 0.3,
+    footer_inches: float = 0.3,
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Configure page margins in inches for printing or PDF export.
+    Args:
+        top_inches: Top margin.
+        bottom_inches: Bottom margin.
+        left_inches: Left margin.
+        right_inches: Right margin.
+        header_inches: Header margin.
+        footer_inches: Footer margin.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.set_sheet_margins(
+        top_inches=top_inches,
+        bottom_inches=bottom_inches,
+        left_inches=left_inches,
+        right_inches=right_inches,
+        header_inches=header_inches,
+        footer_inches=footer_inches,
+        sheet_name=sheet_name
+    )
+
+
+@mcp.tool()
+def excel_set_sheet_orientation_and_paper(
+    orientation: str = "landscape",
+    paper_size: str = "A4",
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Set page orientation ('portrait' or 'landscape') and paper size ('A4', 'Letter', 'Legal', 'A3').
+    Args:
+        orientation: 'portrait' or 'landscape'.
+        paper_size: 'A4', 'Letter', 'Legal', or 'A3'.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.set_sheet_orientation_and_paper(
+        orientation=orientation,
+        paper_size=paper_size,
+        sheet_name=sheet_name
+    )
+
+
+@mcp.tool()
+def excel_set_sheet_fit_to_pages(
+    fit_to_wide: int = 1,
+    fit_to_tall: int = 1,
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Fit worksheet to a specific number of pages wide and tall for printing / PDF export.
+    Args:
+        fit_to_wide: Maximum pages wide (e.g. 1).
+        fit_to_tall: Maximum pages tall (e.g. 1).
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.set_sheet_fit_to_pages(
+        fit_to_wide=fit_to_wide,
+        fit_to_tall=fit_to_tall,
+        sheet_name=sheet_name
+    )
+
+
+# ── HEADLESS OOXML ENHANCEMENTS ──────────────────────────────────────────────────
+
+@mcp.tool()
+def excel_compare_two_workbooks(file_path_1: str, file_path_2: str) -> Dict[str, Any]:
+    """Compare two .xlsx workbooks headlessly and return structural and cell value differences.
+    Args:
+        file_path_1: First workbook file path.
+        file_path_2: Second workbook file path.
+    """
+    return ExcelEngine.compare_two_workbooks(file_path_1=file_path_1, file_path_2=file_path_2)
+
+
+@mcp.tool()
+def excel_extract_hyperlinks(file_path: str, sheet_name: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Extract all embedded URLs and hyperlinks from an .xlsx workbook headlessly.
+    Args:
+        file_path: Path to the .xlsx file.
+        sheet_name: Optional specific worksheet name.
+    """
+    return ExcelEngine.extract_hyperlinks(file_path=file_path, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_unhide_all_sheets_headless(file_path: str, output_path: Optional[str] = None) -> str:
+    """Unhide all hidden and very hidden worksheets in an .xlsx file headlessly.
+    Args:
+        file_path: Input .xlsx file path.
+        output_path: Optional destination path (overwrites input if not provided).
+    """
+    return ExcelEngine.unhide_all_sheets_headless(file_path=file_path, output_path=output_path)
+
+
 def main():
     """Run the FastMCP server."""
     mcp.run()
@@ -1689,3 +2144,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
