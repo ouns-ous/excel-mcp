@@ -1417,6 +1417,271 @@ def excel_clear_all_formatting(sheet_name: Optional[str] = None) -> Dict[str, An
     return controller.clear_all_formatting(sheet_name=sheet_name)
 
 
+# ── ROW & COLUMN OUTLINING / GROUPING ───────────────────────────────────────────
+
+@mcp.tool()
+def excel_group_rows(start_row: int, end_row: int, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Group rows together for expandable/collapsible outline hierarchy.
+    Args:
+        start_row: Starting row index (e.g. 5).
+        end_row: Ending row index (e.g. 15).
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.group_rows(start_row=start_row, end_row=end_row, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_ungroup_rows(start_row: int, end_row: int, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Ungroup rows to remove collapsible outline level.
+    Args:
+        start_row: Starting row index.
+        end_row: Ending row index.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.ungroup_rows(start_row=start_row, end_row=end_row, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_group_columns(start_col: str, end_col: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Group columns together for collapsible outline views.
+    Args:
+        start_col: Starting column letter (e.g. 'C').
+        end_col: Ending column letter (e.g. 'F').
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.group_columns(start_col=start_col, end_col=end_col, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_ungroup_columns(start_col: str, end_col: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Ungroup columns to remove collapsible outline level.
+    Args:
+        start_col: Starting column letter.
+        end_col: Ending column letter.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.ungroup_columns(start_col=start_col, end_col=end_col, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_show_outline_levels(row_levels: Optional[int] = None, col_levels: Optional[int] = None, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Set the outline expansion level (1 = all collapsed, 2+ = expanded details).
+    Args:
+        row_levels: Outline level for rows (1, 2, 3...).
+        col_levels: Outline level for columns (1, 2, 3...).
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.show_outline_levels(row_levels=row_levels, col_levels=col_levels, sheet_name=sheet_name)
+
+
+# ── ADVANCED CONDITIONAL FORMATTING PRESETS ─────────────────────────────────────
+
+@mcp.tool()
+def excel_add_top_bottom_rule(
+    range_address: str,
+    rule_type: str = "top_percent",
+    rank: int = 10,
+    bg_color: str = "#DCFCE7",
+    font_color: str = "#166534",
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Highlight Top N or Bottom N items or percentages in a range.
+    Args:
+        range_address: Cell range (e.g. 'D2:D100').
+        rule_type: 'top_items', 'top_percent', 'bottom_items', 'bottom_percent'.
+        rank: Top or bottom rank count/percentage (default 10).
+        bg_color: Background hex color.
+        font_color: Text hex color.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.add_top_bottom_rule(range_address=range_address, rule_type=rule_type, rank=rank, bg_color=bg_color, font_color=font_color, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_add_above_below_average_rule(
+    range_address: str,
+    above: bool = True,
+    bg_color: str = "#FEF3C7",
+    font_color: str = "#92400E",
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Highlight cells that are above or below the average value of a range.
+    Args:
+        range_address: Cell range (e.g. 'E2:E50').
+        above: True to highlight above average, False for below average.
+        bg_color: Background hex color.
+        font_color: Text hex color.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.add_above_below_average_rule(range_address=range_address, above=above, bg_color=bg_color, font_color=font_color, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_add_icon_set_rule(
+    range_address: str,
+    icon_set_type: str = "3_traffic_lights",
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Add visual icon set ratings directly inside cells.
+    Args:
+        range_address: Cell range (e.g. 'F2:F20').
+        icon_set_type: '3_traffic_lights', '3_arrows', '3_flags', '3_symbols', '4_arrows', '5_quarters'.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.add_icon_set_rule(range_address=range_address, icon_set_type=icon_set_type, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_highlight_duplicate_values(
+    range_address: str,
+    bg_color: str = "#FEE2E2",
+    font_color: str = "#991B1B",
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Automatically highlight all duplicate values across a cell range.
+    Args:
+        range_address: Cell range (e.g. 'A2:A100').
+        bg_color: Fill hex color (default soft red).
+        font_color: Text hex color.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.highlight_duplicate_values(range_address=range_address, bg_color=bg_color, font_color=font_color, sheet_name=sheet_name)
+
+
+# ── FORMULA AUDITING & TRACER ARROWS ───────────────────────────────────────────
+
+@mcp.tool()
+def excel_trace_precedents(cell: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Draw graphic audit tracer arrows pointing to cells that feed data into this formula.
+    Args:
+        cell: Coordinate of the formula cell (e.g. 'C10').
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.trace_precedents(cell=cell, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_trace_dependents(cell: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Draw graphic audit tracer arrows pointing to formulas that depend on this cell value.
+    Args:
+        cell: Coordinate of the cell (e.g. 'B4').
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.trace_dependents(cell=cell, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_remove_tracer_arrows(sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Clear all precedent and dependent audit tracer arrows from the worksheet.
+    Args:
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.remove_tracer_arrows(sheet_name=sheet_name)
+
+
+# ── WORKBOOK STRUCTURE SECURITY ─────────────────────────────────────────────────
+
+@mcp.tool()
+def excel_protect_workbook(password: Optional[str] = None, lock_structure: bool = True, lock_windows: bool = False) -> Dict[str, Any]:
+    """Lock workbook structure to prevent adding, deleting, hiding, or renaming sheets.
+    Args:
+        password: Optional protection password.
+        lock_structure: Whether to lock sheet structure (default True).
+        lock_windows: Whether to lock window sizing/positioning.
+    """
+    return controller.protect_workbook(password=password, lock_structure=lock_structure, lock_windows=lock_windows)
+
+
+@mcp.tool()
+def excel_unprotect_workbook(password: Optional[str] = None) -> Dict[str, Any]:
+    """Unlock workbook structure.
+    Args:
+        password: Optional protection password.
+    """
+    return controller.unprotect_workbook(password=password)
+
+
+# ── SHAPES, ARROWS & BADGES ─────────────────────────────────────────────────────
+
+@mcp.tool()
+def excel_add_shape(
+    shape_type: str = "rounded_rectangle",
+    cell: str = "B2",
+    width: float = 120,
+    height: float = 40,
+    fill_color: str = "#2563EB",
+    line_color: str = "#1D4ED8",
+    text: Optional[str] = None,
+    font_color: str = "#FFFFFF",
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Insert a modern native shape or flow badge with custom text and styling.
+    Args:
+        shape_type: 'rectangle', 'rounded_rectangle', 'oval', or 'arrow_right'.
+        cell: Anchor cell coordinate (e.g. 'B2').
+        width: Width in points.
+        height: Height in points.
+        fill_color: Hex fill color.
+        line_color: Hex border color.
+        text: Optional label text inside the shape.
+        font_color: Hex text color.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.add_shape(
+        shape_type=shape_type,
+        cell=cell,
+        width=width,
+        height=height,
+        fill_color=fill_color,
+        line_color=line_color,
+        text=text,
+        font_color=font_color,
+        sheet_name=sheet_name
+    )
+
+
+@mcp.tool()
+def excel_delete_shape(shape_name: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Delete a shape, badge, or image by its exact name.
+    Args:
+        shape_name: Name identifier of the shape.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.delete_shape(shape_name=shape_name, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_list_shapes(sheet_name: Optional[str] = None) -> List[Dict[str, Any]]:
+    """List all shapes, badges, and graphic objects on the sheet with position/size.
+    Args:
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.list_shapes(sheet_name=sheet_name)
+
+
+# ── SPECIAL CELLS INSPECTION & EDIT PERMISSIONS ─────────────────────────────────
+
+@mcp.tool()
+def excel_get_special_cells_summary(cell_type: str = "blanks", sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Inspect and count special cells across the worksheet: 'blanks', 'constants', 'formulas', or 'comments'.
+    Args:
+        cell_type: 'blanks', 'constants', 'formulas', or 'comments'.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.get_special_cells_summary(cell_type=cell_type, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_lock_unlock_cells(range_address: str, locked: bool = True, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Set edit permissions for specific cells when sheet protection is active.
+    Args:
+        range_address: Range to set (e.g. 'B4:D20').
+        locked: True to protect/lock, False to allow editing even on protected sheets.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.lock_unlock_cells(range_address=range_address, locked=locked, sheet_name=sheet_name)
+
+
 def main():
     """Run the FastMCP server."""
     mcp.run()

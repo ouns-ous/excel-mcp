@@ -16,7 +16,7 @@ A comprehensive **Model Context Protocol (MCP)** server for Windows enabling AI 
 
 ---
 
-## 🛠️ Complete List of Tools (100 Tools)
+## 🛠️ Complete List of Tools (119 Tools)
 
 ### 1. Workbook & Window Management
 - `excel_status()`: Get current running state, open workbooks count, active sheet, active cell, and used range.
@@ -66,18 +66,29 @@ A comprehensive **Model Context Protocol (MCP)** server for Windows enabling AI 
 - `excel_add_hyperlink(cell, target, text, tooltip)`: Insert clickable web link or internal sheet link.
 - `excel_remove_hyperlink(cell)`: Remove hyperlink.
 
-### 5. Sorting & Filtering
+### 5. Outlining, Grouping & Hierarchies
+- `excel_group_rows(start_row, end_row)`: Group detail rows into collapsible hierarchies (+/-).
+- `excel_ungroup_rows(start_row, end_row)`: Remove row grouping.
+- `excel_group_columns(start_col, end_col)`: Group detail columns into collapsible views.
+- `excel_ungroup_columns(start_col, end_col)`: Remove column grouping.
+- `excel_show_outline_levels(row_levels, col_levels)`: Set outline depth (1=summarized, 2+=detailed).
+
+### 6. Sorting & Filtering
 - `excel_sort_range(range_address, key_column, order, has_headers)`: Sort tabular range by any column.
 - `excel_apply_filter(range_address, column_index, criteria)`: Apply AutoFilter criteria.
 - `excel_clear_filters()`: Clear all active AutoFilters across sheet.
 
-### 6. Conditional Formatting & Validation
+### 7. Conditional Formatting & Validation
 - `excel_add_conditional_formatting(...)`: Color scale heatmaps, data bars, or highlight rules.
+- `excel_add_top_bottom_rule(range_address, rule_type, rank)`: Highlight Top N or Bottom N items/percentages.
+- `excel_add_above_below_average_rule(range_address, above)`: Highlight cells above or below range average.
+- `excel_add_icon_set_rule(range_address, icon_set_type)`: In-cell KPI icons (traffic lights, arrows, flags).
+- `excel_highlight_duplicate_values(range_address)`: Highlight duplicate values dynamically.
 - `excel_clear_conditional_formatting(range_address)`: Clear conditional formatting rules.
 - `excel_add_data_validation(range_address, validation_type, formula1)`: Add dropdown lists or input constraints.
 - `excel_clear_data_validation(range_address)`: Remove validation dropdowns.
 
-### 7. Structural Rows, Columns & Merging
+### 8. Structural Rows, Columns & Merging
 - `excel_insert_rows(row_index, count)`: Insert blank rows.
 - `excel_delete_rows(row_index, count)`: Delete rows.
 - `excel_insert_columns(column, count)`: Insert blank columns.
@@ -89,40 +100,52 @@ A comprehensive **Model Context Protocol (MCP)** server for Windows enabling AI 
 - `excel_merge_cells(range_address)`: Merge cell ranges.
 - `excel_unmerge_cells(range_address)`: Unmerge cells.
 
-### 8. Data Analysis, What-If & Cleaning
+### 9. Formula Auditing & Tracer Arrows
+- `excel_trace_precedents(cell)`: Draw arrows pointing to predecessor data cells.
+- `excel_trace_dependents(cell)`: Draw arrows pointing to dependent formulas.
+- `excel_remove_tracer_arrows()`: Clear all visual audit tracer arrows.
+- `excel_list_formulas(range_address)`: Inspect formulas and current calculated values.
+- `excel_calculate_now()`: Force workbook recalculation.
+
+### 10. Data Analysis, What-If & Cleaning
 - `excel_goal_seek(target_cell, target_value, changing_cell)`: Native financial Goal Seek analysis.
 - `excel_text_to_columns(range_address, destination_cell, delimiter)`: Split delimited single column into columns.
 - `excel_remove_duplicates(range_address, columns, has_headers)`: Deduplicate table rows.
 - `excel_get_column_summary(range_address)`: Instant statistical metrics (Sum, Count, Average, Min, Max).
+- `excel_get_special_cells_summary(cell_type)`: Inspect and count special cells ('blanks', 'constants', 'formulas', 'comments').
 
-### 9. Page Setup, Printing & Headers/Footers
+### 11. Page Setup, Printing & Headers/Footers
 - `excel_set_page_setup(orientation, paper_size, fit_to_pages)`: Configure page orientation and 1-page fit.
 - `excel_set_header_footer(...)`: Configure custom printed headers and footers (&P page, &D date, etc.).
 - `excel_set_print_area(range_address)`: Set explicit print region.
 - `excel_clear_print_area()`: Clear print region.
 
-### 10. Images, Watermarks & Range Screenshots
+### 12. Images, Shapes, Badges & Watermarks
 - `excel_add_image(image_path, cell, width, height)`: Insert image or logo onto worksheet.
+- `excel_add_shape(shape_type, cell, width, height, text)`: Insert modern native shapes (rounded rectangle, arrow, oval) with text.
+- `excel_list_shapes()`: List all shapes and graphic objects on the sheet.
+- `excel_delete_shape(shape_name)`: Delete a graphic shape or object.
 - `excel_add_watermark(text, font_size, color)`: Add semi-transparent diagonal watermark ('CONFIDENTIAL', 'DRAFT').
 - `excel_export_range_image(range_address, output_path)`: High-resolution PNG snapshot of a range.
 
-### 11. Comments & Notes
+### 13. Comments & Notes
 - `excel_add_comment(cell, text, author)`: Attach comment/note to cell.
 - `excel_list_comments()`: List all review comments in sheet.
 - `excel_delete_comment(cell)`: Remove comment from cell.
 
-### 12. Security & Protection
+### 14. Security, Cell Permissions & Protection
 - `excel_protect_sheet(password)`: Lock sheet against edits.
 - `excel_unprotect_sheet(password)`: Unlock worksheet.
+- `excel_protect_workbook(password, lock_structure)`: Prevent adding, deleting, or renaming sheets.
+- `excel_unprotect_workbook(password)`: Unlock workbook structure.
+- `excel_lock_unlock_cells(range_address, locked)`: Define cell-level edit permissions on protected sheets.
 
-### 13. Named Ranges & Formulas Audit
+### 15. Named Ranges
 - `excel_create_named_range(name, range_address)`: Define named range for formulas.
 - `excel_list_named_ranges()`: List all defined workbook names.
 - `excel_delete_named_range(name)`: Delete named range.
-- `excel_calculate_now()`: Force workbook recalculation.
-- `excel_list_formulas(range_address)`: Audit all formulas, strings, and evaluated values.
 
-### 14. Tables, Charts & Visualizations
+### 16. Tables, Charts & Visualizations
 - `excel_create_table(range_address, table_name, style_name, has_headers)`: Convert range to Excel Table (ListObject).
 - `excel_add_table_total_row(table_name)`: Show table total row.
 - `excel_add_chart(chart_type, source_range, title, left, top, width, height)`: Insert chart.
@@ -130,14 +153,14 @@ A comprehensive **Model Context Protocol (MCP)** server for Windows enabling AI 
 - `excel_add_sparkline(data_range, location_cell, sparkline_type)`: Insert mini in-cell trend lines.
 - `excel_create_pivot_table(...)`: Dynamic native Pivot Table.
 
-### 15. Executive Components, Controls & Roadmaps
+### 17. Executive Components, Controls & Roadmaps
 - `excel_create_kpi_card(start_cell, title, value, subtitle, accent_color)`: Render 3-row executive KPI block.
 - `excel_add_metric_tile(cell, label, value, delta, status)`: Compact 2-row metric tile.
 - `excel_add_callout_box(cell, text, title, box_type)`: Executive alert banner shape.
 - `excel_add_checkbox(cell, caption, linked_cell)`: Form Control interactive checkbox.
 - `excel_create_gantt_block(start_cell, tasks, weeks_count)`: Render project Gantt timeline grid.
 
-### 16. Headless OOXML Engine (openpyxl)
+### 18. Headless OOXML Engine (openpyxl)
 - `excel_create_from_markdown(markdown_table, output_path, sheet_name)`: Convert Markdown table to styled `.xlsx`.
 - `excel_read_to_markdown(file_path, sheet_name)`: Read `.xlsx` table into clean Markdown.
 - `excel_json_to_sheet(json_data, output_path, sheet_name)`: Export JSON records to styled `.xlsx`.
@@ -186,4 +209,7 @@ uv run python test_advanced_utils.py
 
 # Super Tools: Goal Seek, Gantt Roadmaps, Text-to-Columns, Sparklines, Audit
 uv run python test_super_tools.py
+
+# Power Tools: Grouping, Outlines, Top/Bottom Rules, Icon Sets, Tracer Arrows, Shapes
+uv run python test_power_tools.py
 ```

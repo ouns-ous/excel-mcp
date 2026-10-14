@@ -1714,6 +1714,245 @@ class ExcelController:
         sheet.UsedRange.ClearFormats()
         return {"status": "success", "message": "All formatting cleared across used range."}
 
+    # ── ROW & COLUMN OUTLINING / GROUPING ─────────────────────────────────────
+
+    def group_rows(self, start_row: int, end_row: int, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Group rows for collapsibility/outline."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Rows(f"{start_row}:{end_row}").Group()
+        return {"status": "success", "start_row": start_row, "end_row": end_row, "message": "Rows grouped."}
+
+    def ungroup_rows(self, start_row: int, end_row: int, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Ungroup rows to remove outline level."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Rows(f"{start_row}:{end_row}").Ungroup()
+        return {"status": "success", "start_row": start_row, "end_row": end_row, "message": "Rows ungrouped."}
+
+    def group_columns(self, start_col: str, end_col: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Group columns for collapsibility/outline."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Columns(f"{start_col}:{end_col}").Group()
+        return {"status": "success", "start_col": start_col, "end_col": end_col, "message": "Columns grouped."}
+
+    def ungroup_columns(self, start_col: str, end_col: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Ungroup columns to remove outline level."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Columns(f"{start_col}:{end_col}").Ungroup()
+        return {"status": "success", "start_col": start_col, "end_col": end_col, "message": "Columns ungrouped."}
+
+    def show_outline_levels(self, row_levels: Optional[int] = None, col_levels: Optional[int] = None, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Expand or collapse grouped rows/columns to specified outline depth (1=collapsed, 2+=expanded)."""
+        sheet = self.get_sheet(sheet_name)
+        if row_levels is not None:
+            sheet.Outline.ShowLevels(RowLevels=row_levels)
+        if col_levels is not None:
+            sheet.Outline.ShowLevels(ColumnLevels=col_levels)
+        return {"status": "success", "row_levels": row_levels, "col_levels": col_levels}
+
+    # ── ADVANCED CONDITIONAL FORMATTING PRESETS ────────────────────────────────
+
+    def add_top_bottom_rule(
+        self,
+        range_address: str,
+        rule_type: str = "top_percent",
+        rank: int = 10,
+        bg_color: str = "#DCFCE7",
+        font_color: str = "#166534",
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Highlight Top N or Bottom N items/percents in a numeric range."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(range_address)
+        # xlTop10 = 5
+        cond = rng.FormatConditions.AddTop10()
+        is_bottom = "bottom" in rule_type.lower()
+        is_percent = "percent" in rule_type.lower()
+        cond.TopBottom = 2 if is_bottom else 1  # 1 = xlTop10Top, 2 = xlTop10Bottom
+        cond.Percent = is_percent
+        cond.Rank = rank
+        cond.Interior.Color = hex_to_bgr_int(bg_color)
+        cond.Font.Color = hex_to_bgr_int(font_color)
+        return {"status": "success", "range": range_address, "rule_type": rule_type, "rank": rank}
+
+    def add_above_below_average_rule(
+        self,
+        range_address: str,
+        above: bool = True,
+        bg_color: str = "#FEF3C7",
+        font_color: str = "#92400E",
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Highlight cells that are above or below the range average."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(range_address)
+        # xlAboveAverageCondition = 12
+        cond = rng.FormatConditions.AddAboveAverage()
+        cond.AboveBelow = 0 if above else 1  # 0 = xlAboveAverage, 1 = xlBelowAverage
+        cond.Interior.Color = hex_to_bgr_int(bg_color)
+        cond.Font.Color = hex_to_bgr_int(font_color)
+        return {"status": "success", "range": range_address, "above": above}
+
+    def add_icon_set_rule(
+        self,
+        range_address: str,
+        icon_set_type: str = "3_traffic_lights",
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Add visual icon set (traffic lights, arrows, flags) to cells."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(range_address)
+        # xlIconSet = 6
+        cond = rng.FormatConditions.AddIconSetCondition()
+        icon_map = {
+            "3_traffic_lights": 1, # xl3TrafficLights1
+            "3_arrows": 2,         # xl3Arrows
+            "3_flags": 3,          # xl3Flags
+            "3_symbols": 6,        # xl3Symbols
+            "4_arrows": 7,         # xl4Arrows
+            "5_quarters": 17       # xl5Quarters
+        }
+        cond.IconSet = icon_map.get(icon_set_type.lower(), 1)
+        return {"status": "success", "range": range_address, "icon_set": icon_set_type}
+
+    def highlight_duplicate_values(
+        self,
+        range_address: str,
+        bg_color: str = "#FEE2E2",
+        font_color: str = "#991B1B",
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Highlight duplicate values across a range in real-time."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(range_address)
+        # xlUniqueValues = 8
+        cond = rng.FormatConditions.AddUniqueValues()
+        cond.DupeUnique = 1  # 1 = xlDuplicate, 0 = xlUnique
+        cond.Interior.Color = hex_to_bgr_int(bg_color)
+        cond.Font.Color = hex_to_bgr_int(font_color)
+        return {"status": "success", "range": range_address, "message": "Duplicates highlighted."}
+
+    # ── FORMULA AUDITING & TRACING ────────────────────────────────────────────
+
+    def trace_precedents(self, cell: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Draw visual audit arrows pointing to the cells that provide data to this formula."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Range(cell).ShowPrecedents()
+        return {"status": "success", "cell": cell, "message": "Precedent tracer arrows shown."}
+
+    def trace_dependents(self, cell: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Draw visual audit arrows pointing to cells that depend on this cell value."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Range(cell).ShowDependents()
+        return {"status": "success", "cell": cell, "message": "Dependent tracer arrows shown."}
+
+    def remove_tracer_arrows(self, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Clear all precedent and dependent audit tracer arrows."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.ClearArrows()
+        return {"status": "success", "message": "All audit tracer arrows cleared."}
+
+    # ── WORKBOOK STRUCTURE & WINDOW SECURITY ──────────────────────────────────
+
+    def protect_workbook(self, password: Optional[str] = None, lock_structure: bool = True, lock_windows: bool = False) -> Dict[str, Any]:
+        """Protect workbook structure to prevent adding, deleting, or renaming sheets."""
+        wb = self.get_workbook()
+        if password:
+            wb.Protect(Password=password, Structure=lock_structure, Windows=lock_windows)
+        else:
+            wb.Protect(Structure=lock_structure, Windows=lock_windows)
+        return {"status": "success", "workbook": wb.Name, "structure_locked": lock_structure}
+
+    def unprotect_workbook(self, password: Optional[str] = None) -> Dict[str, Any]:
+        """Remove workbook structure protection."""
+        wb = self.get_workbook()
+        if password:
+            wb.Unprotect(Password=password)
+        else:
+            wb.Unprotect()
+        return {"status": "success", "workbook": wb.Name, "protected": False}
+
+    # ── SHAPES, ARROWS & BADGES ───────────────────────────────────────────────
+
+    def add_shape(
+        self,
+        shape_type: str = "rounded_rectangle",
+        cell: str = "B2",
+        width: float = 120,
+        height: float = 40,
+        fill_color: str = "#2563EB",
+        line_color: str = "#1D4ED8",
+        text: Optional[str] = None,
+        font_color: str = "#FFFFFF",
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Insert a native shape (rectangle, rounded_rectangle, oval, arrow_right) with optional text."""
+        sheet = self.get_sheet(sheet_name)
+        target = sheet.Range(cell)
+        shape_map = {
+            "rectangle": 1,           # msoShapeRectangle
+            "rounded_rectangle": 5,   # msoShapeRoundedRectangle
+            "oval": 9,                # msoShapeOval
+            "arrow_right": 13         # msoShapeRightArrow
+        }
+        mso_type = shape_map.get(shape_type.lower(), 5)
+        shape = sheet.Shapes.AddShape(mso_type, target.Left, target.Top, width, height)
+        shape.Fill.Solid()
+        shape.Fill.ForeColor.RGB = hex_to_bgr_int(fill_color)
+        shape.Line.ForeColor.RGB = hex_to_bgr_int(line_color)
+        if text:
+            tf = shape.TextFrame2
+            tf.TextRange.Text = text
+            tf.TextRange.Font.Fill.ForeColor.RGB = hex_to_bgr_int(font_color)
+            tf.TextRange.Font.Name = "Segoe UI"
+            tf.TextRange.Font.Size = 10
+            tf.TextRange.Font.Bold = True
+        return {"status": "success", "shape_name": shape.Name, "cell": cell, "type": shape_type}
+
+    def delete_shape(self, shape_name: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Delete a shape, image, or drawing object by name."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Shapes(shape_name).Delete()
+        return {"status": "success", "deleted_shape": shape_name}
+
+    def list_shapes(self, sheet_name: Optional[str] = None) -> List[Dict[str, Any]]:
+        """List all shapes, images, and drawing objects on the sheet."""
+        sheet = self.get_sheet(sheet_name)
+        items = []
+        for s in sheet.Shapes:
+            items.append({
+                "name": s.Name,
+                "type": s.Type,
+                "left": round(s.Left, 1),
+                "top": round(s.Top, 1),
+                "width": round(s.Width, 1),
+                "height": round(s.Height, 1)
+            })
+        return items
+
+    # ── SPECIAL CELLS SELECTION & FORMULA AUDIT ───────────────────────────────
+
+    def get_special_cells_summary(self, cell_type: str = "blanks", sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Inspect and count special cells across the sheet: 'blanks', 'constants', 'formulas', 'comments'."""
+        sheet = self.get_sheet(sheet_name)
+        type_map = {
+            "blanks": 4,       # xlCellTypeBlanks
+            "constants": 2,    # xlCellTypeConstants
+            "formulas": -4123, # xlCellTypeFormulas
+            "comments": -4144  # xlCellTypeComments
+        }
+        xl_type = type_map.get(cell_type.lower(), 4)
+        try:
+            cells = sheet.UsedRange.SpecialCells(xl_type)
+            return {"status": "success", "type": cell_type, "count": cells.Count, "addresses": cells.Address}
+        except Exception:
+            return {"status": "success", "type": cell_type, "count": 0, "addresses": None}
+
+    def lock_unlock_cells(self, range_address: str, locked: bool = True, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Lock or unlock specific cells (unlocked cells can still be edited when sheet is protected)."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Range(range_address).Locked = locked
+        return {"status": "success", "range": range_address, "locked": locked}
+
 
 # Singleton instance
 controller = ExcelController()
