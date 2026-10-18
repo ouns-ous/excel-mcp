@@ -2578,6 +2578,218 @@ class ExcelController:
         sheet.Columns(col_ref).Hidden = hidden
         return {"status": "success", "columns": col_ref, "hidden": hidden}
 
+    # ── FREEZE PANES & RANGE COPY CONTROLS ────────────────────────────────────
+
+    def freeze_custom_panes(self, row: int, column: int, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Freeze panes at an arbitrary row and column intersection."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Activate()
+        app = self.get_app(bring_to_front=False)
+        app.ActiveWindow.FreezePanes = False
+        sheet.Cells(row, column).Select()
+        app.ActiveWindow.FreezePanes = True
+        return {"status": "success", "row": row, "column": column, "message": "Panes frozen at custom intersection."}
+
+    def copy_range(self, source_range: str, destination_cell: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Copy a range with values, formulas, and formatting to a destination cell."""
+        sheet = self.get_sheet(sheet_name)
+        src = sheet.Range(source_range)
+        dest = sheet.Range(destination_cell)
+        src.Copy(dest)
+        return {"status": "success", "source": source_range, "destination": destination_cell}
+
+
+    def freeze_top_row(self, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Freeze the top header row so it stays visible during vertical scrolling."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Activate()
+        app = self.get_app(bring_to_front=False)
+        app.ActiveWindow.FreezePanes = False
+        sheet.Rows(2).Select()
+        app.ActiveWindow.FreezePanes = True
+        return {"status": "success", "message": "Top row frozen."}
+
+    def freeze_first_column(self, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Freeze the first column (Column A) so it stays visible during horizontal scrolling."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Activate()
+        app = self.get_app(bring_to_front=False)
+        app.ActiveWindow.FreezePanes = False
+        sheet.Columns("B").Select()
+        app.ActiveWindow.FreezePanes = True
+        return {"status": "success", "message": "First column frozen."}
+
+    # ── ADVANCED AUTOFIT CONTROLS ─────────────────────────────────────────────
+
+    def autofit_rows(self, range_address: Optional[str] = None, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Auto-fit row heights to match cell content."""
+        sheet = self.get_sheet(sheet_name)
+        target = sheet.Range(range_address) if range_address else sheet.UsedRange
+        target.Rows.AutoFit()
+        return {"status": "success", "autofit_rows": range_address or "used_range"}
+
+    def autofit_all(self, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Auto-fit all rows and columns across the entire used range."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.UsedRange.Columns.AutoFit()
+        sheet.UsedRange.Rows.AutoFit()
+        return {"status": "success", "message": "All columns and rows auto-fitted."}
+
+    # ── TYPOGRAPHY & FONT STYLES ──────────────────────────────────────────────
+
+    def set_strikethrough(self, range_address: str, strikethrough: bool = True, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Apply or remove strikethrough text formatting on a range."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Range(range_address).Font.Strikethrough = strikethrough
+        return {"status": "success", "range": range_address, "strikethrough": strikethrough}
+
+    def set_subscript(self, range_address: str, subscript: bool = True, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Apply or remove subscript formatting on a range (e.g. chemical formulas)."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Range(range_address).Font.Subscript = subscript
+        return {"status": "success", "range": range_address, "subscript": subscript}
+
+    def set_superscript(self, range_address: str, superscript: bool = True, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Apply or remove superscript formatting on a range (e.g. mathematical powers, notes)."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Range(range_address).Font.Superscript = superscript
+        return {"status": "success", "range": range_address, "superscript": superscript}
+
+    def set_underline_style(
+        self,
+        range_address: str,
+        underline_type: str = "single",
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Set underline style ('none', 'single', 'double', 'single_accounting', 'double_accounting')."""
+        sheet = self.get_sheet(sheet_name)
+        u_map = {
+            "none": -4142,
+            "single": 2,
+            "double": -4119,
+            "single_accounting": 4,
+            "double_accounting": 5
+        }
+        val = u_map.get(underline_type.lower(), 2)
+        sheet.Range(range_address).Font.Underline = val
+        return {"status": "success", "range": range_address, "underline_type": underline_type}
+
+    # ── WINDOW & DISPLAY TOGGLES ──────────────────────────────────────────────
+
+    def toggle_formula_bar(self, show: bool = True) -> Dict[str, Any]:
+        """Show or hide Excel's formula bar."""
+        app = self.get_app(bring_to_front=False)
+        app.DisplayFormulaBar = show
+        return {"status": "success", "display_formula_bar": show}
+
+    def toggle_status_bar(self, show: bool = True) -> Dict[str, Any]:
+        """Show or hide Excel's bottom status bar."""
+        app = self.get_app(bring_to_front=False)
+        app.DisplayStatusBar = show
+        return {"status": "success", "display_status_bar": show}
+
+    def toggle_scroll_bars(self, horizontal: bool = True, vertical: bool = True) -> Dict[str, Any]:
+        """Show or hide the horizontal and vertical scrollbars in the active window."""
+        app = self.get_app(bring_to_front=False)
+        app.ActiveWindow.DisplayHorizontalScrollBar = horizontal
+        app.ActiveWindow.DisplayVerticalScrollBar = vertical
+        return {"status": "success", "horizontal": horizontal, "vertical": vertical}
+
+    def toggle_sheet_tabs(self, show: bool = True) -> Dict[str, Any]:
+        """Show or hide worksheet tab bar at the bottom of the window."""
+        app = self.get_app(bring_to_front=False)
+        app.ActiveWindow.DisplayWorkbookTabs = show
+        return {"status": "success", "display_workbook_tabs": show}
+
+    # ── THREADED COMMENTS (EXCEL 365 / 2021) ──────────────────────────────────
+
+    def add_threaded_comment(self, cell: str, text: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Add a modern threaded comment to a cell."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(cell)
+        try:
+            rng.AddCommentThreaded(text)
+        except Exception:
+            rng.AddComment(text)
+        return {"status": "success", "cell": cell, "comment": text}
+
+    def delete_threaded_comment(self, cell: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Delete a threaded or standard comment on a cell."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(cell)
+        try:
+            if rng.CommentThreaded:
+                rng.CommentThreaded.Delete()
+        except Exception:
+            if rng.Comment:
+                rng.Comment.Delete()
+        return {"status": "success", "cell": cell, "message": "Comment deleted."}
+
+    def list_threaded_comments(self, sheet_name: Optional[str] = None) -> List[Dict[str, Any]]:
+        """List all threaded comments on the worksheet with author, text, date, and replies count."""
+        sheet = self.get_sheet(sheet_name)
+        comments = []
+        try:
+            for tc in sheet.CommentsThreaded:
+                comments.append({
+                    "cell": tc.Parent.Address,
+                    "author": tc.Author.Name if tc.Author else "",
+                    "text": tc.Text,
+                    "date": str(tc.Date) if hasattr(tc, "Date") else None,
+                    "replies_count": tc.Replies.Count if hasattr(tc, "Replies") else 0
+                })
+        except Exception:
+            pass
+        return comments
+
+    # ── WORKBOOK STRUCTURE & WINDOWS PROTECTION ───────────────────────────────
+
+    def protect_workbook_structure(
+        self,
+        password: str = "",
+        protect_structure: bool = True,
+        protect_windows: bool = False
+    ) -> Dict[str, Any]:
+        """Protect workbook structure (preventing adding, deleting, hiding, or renaming sheets)."""
+        wb = self.get_workbook()
+        if password:
+            wb.Protect(Password=password, Structure=protect_structure, Windows=protect_windows)
+        else:
+            wb.Protect(Structure=protect_structure, Windows=protect_windows)
+        return {"status": "success", "structure": protect_structure, "windows": protect_windows}
+
+    def unprotect_workbook_structure(self, password: str = "") -> Dict[str, Any]:
+        """Unprotect workbook structure."""
+        wb = self.get_workbook()
+        if password:
+            wb.Unprotect(Password=password)
+        else:
+            wb.Unprotect()
+        return {"status": "success", "message": "Workbook structure unprotected."}
+
+    def is_workbook_protected(self) -> Dict[str, Any]:
+        """Check if workbook structure or windows are protected."""
+        wb = self.get_workbook()
+        return {
+            "protect_structure": bool(wb.ProtectStructure),
+            "protect_windows": bool(wb.ProtectWindows)
+        }
+
+    # ── PRINT QUALITY & BLACK AND WHITE ───────────────────────────────────────
+
+    def set_print_quality(self, dpi: int = 300, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Set print resolution quality in DPI (e.g. 300 or 600)."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.PageSetup.PrintQuality = dpi
+        return {"status": "success", "print_quality_dpi": dpi}
+
+    def set_black_and_white_print(self, bw: bool = True, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Enable or disable black and white print mode for clean monochrome PDF export or printing."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.PageSetup.BlackAndWhite = bw
+        return {"status": "success", "black_and_white": bw}
+
 
 # Singleton instance
 controller = ExcelController()
+

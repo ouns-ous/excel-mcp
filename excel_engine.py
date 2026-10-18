@@ -437,4 +437,100 @@ class ExcelEngine:
         wb.save(dest)
         return dest
 
+    @staticmethod
+    def get_defined_names_headless(file_path: str) -> List[Dict[str, Any]]:
+        """Read all workbook defined names / named ranges headlessly."""
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        names = []
+        try:
+            for dn in wb.defined_names.values():
+                dests = []
+                try:
+                    dests = [f"{s}:{coord}" for s, coord in dn.destinations]
+                except Exception:
+                    pass
+                names.append({
+                    "name": dn.name,
+                    "value": str(dn.value),
+                    "destinations": dests
+                })
+        except Exception:
+            pass
+        return names
+
+
+    @staticmethod
+    def insert_rows_headless(
+        file_path: str,
+        row_idx: int,
+        amount: int = 1,
+        sheet_name: Optional[str] = None,
+        output_path: Optional[str] = None
+    ) -> str:
+        """Insert blank rows headlessly at a specific row position."""
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+        ws.insert_rows(row_idx, amount=amount)
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return dest
+
+    @staticmethod
+    def delete_rows_headless(
+        file_path: str,
+        row_idx: int,
+        amount: int = 1,
+        sheet_name: Optional[str] = None,
+        output_path: Optional[str] = None
+    ) -> str:
+        """Delete rows headlessly at a specific row position."""
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+        ws.delete_rows(row_idx, amount=amount)
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return dest
+
+    @staticmethod
+    def insert_cols_headless(
+        file_path: str,
+        col_idx: int,
+        amount: int = 1,
+        sheet_name: Optional[str] = None,
+        output_path: Optional[str] = None
+    ) -> str:
+        """Insert blank columns headlessly at a specific column position."""
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+        ws.insert_cols(col_idx, amount=amount)
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return dest
+
+    @staticmethod
+    def delete_cols_headless(
+        file_path: str,
+        col_idx: int,
+        amount: int = 1,
+        sheet_name: Optional[str] = None,
+        output_path: Optional[str] = None
+    ) -> str:
+        """Delete columns headlessly at a specific column position."""
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+        ws.delete_cols(col_idx, amount=amount)
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return dest
+
+
 

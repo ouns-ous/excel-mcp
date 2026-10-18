@@ -16,7 +16,7 @@ A comprehensive **Model Context Protocol (MCP)** server for Windows enabling AI 
 
 ---
 
-## 🛠️ Complete List of Tools (174 Tools)
+## 🛠️ Complete List of Tools (201 Tools)
 
 ### 1. Workbook & Window Management
 - `excel_status()`: Get current running state, open workbooks count, active sheet, active cell, and used range.
@@ -224,7 +224,35 @@ A comprehensive **Model Context Protocol (MCP)** server for Windows enabling AI 
 - `excel_set_row_visibility(row_index, hidden)`: Hide or unhide specific rows.
 - `excel_set_column_visibility(column, hidden)`: Hide or unhide specific columns.
 
-### 26. Headless OOXML Engine (openpyxl)
+### 26. Freeze Panes, AutoFit & Range Copy
+- `excel_freeze_custom_panes(row, column)`: Freeze panes at any custom row and column intersection.
+- `excel_freeze_top_row()`: Freeze top header row during vertical scrolling.
+- `excel_freeze_first_column()`: Freeze first column during horizontal scrolling.
+- `excel_copy_range(source_range, destination_cell)`: Copy a range with formulas and styles.
+- `excel_autofit_rows(range_address)`: Auto-fit row heights to cell content.
+- `excel_autofit_all()`: Auto-fit all rows and columns across the entire used range.
+
+### 27. Typography, Window Toggles & Threaded Comments
+- `excel_set_strikethrough(range_address, strikethrough)`: Apply or remove strikethrough text formatting.
+- `excel_set_subscript(range_address, subscript)`: Apply or remove subscript formatting.
+- `excel_set_superscript(range_address, superscript)`: Apply or remove superscript formatting.
+- `excel_set_underline_style(range_address, underline_type)`: Single, double, or accounting underlines.
+- `excel_toggle_formula_bar(show)`: Show or hide Excel formula bar.
+- `excel_toggle_status_bar(show)`: Show or hide Excel bottom status bar.
+- `excel_toggle_scroll_bars(horizontal, vertical)`: Show or hide horizontal and vertical scrollbars.
+- `excel_toggle_sheet_tabs(show)`: Show or hide worksheet tabs bar.
+- `excel_add_threaded_comment(cell, text)`: Modern Excel 365 threaded comments.
+- `excel_delete_threaded_comment(cell)`: Delete threaded comments.
+- `excel_list_threaded_comments()`: List threaded comments with author and replies count.
+
+### 28. Workbook Protection & Print Quality
+- `excel_protect_workbook_structure(password, protect_structure, protect_windows)`: Lock sheet add/delete/rename structure.
+- `excel_unprotect_workbook_structure(password)`: Unlock workbook structure.
+- `excel_is_workbook_protected()`: Query workbook structure protection status.
+- `excel_set_print_quality(dpi)`: Set print resolution quality in DPI (300, 600).
+- `excel_set_black_and_white_print(bw)`: Enable clean monochrome PDF export or printing.
+
+### 29. Headless OOXML Engine (openpyxl)
 - `excel_create_from_markdown(markdown_table, output_path, sheet_name)`: Convert Markdown table to styled `.xlsx`.
 - `excel_read_to_markdown(file_path, sheet_name)`: Read `.xlsx` table into clean Markdown.
 - `excel_json_to_sheet(json_data, output_path, sheet_name)`: Export JSON records to styled `.xlsx`.
@@ -243,6 +271,11 @@ A comprehensive **Model Context Protocol (MCP)** server for Windows enabling AI 
 - `excel_protect_sheet_headless(file_path, password, sheet_name)`: Password protect sheet headlessly.
 - `excel_delete_sheet_headless(file_path, sheet_name)`: Remove worksheet headlessly.
 - `excel_set_sheet_color_headless(file_path, sheet_name, hex_color)`: Colorize worksheet tab headlessly.
+- `excel_get_defined_names_headless(file_path)`: Extract all defined names/ranges headlessly.
+- `excel_insert_rows_headless(file_path, row_idx, amount)`: Insert blank rows headlessly.
+- `excel_delete_rows_headless(file_path, row_idx, amount)`: Delete rows headlessly.
+- `excel_insert_cols_headless(file_path, col_idx, amount)`: Insert blank columns headlessly.
+- `excel_delete_cols_headless(file_path, col_idx, amount)`: Delete columns headlessly.
 
 ---
 
@@ -289,6 +322,10 @@ uv run python test_ultra_tools.py
 
 # Mega Tools: Sheet Cloning, Tab Color, Sheet Protection, Deletion
 uv run python test_mega_tools.py
+
+# Giga Tools: Headless Defined Names, Row/Column Insertions & Deletions
+uv run python test_giga_tools.py
 ```
+
 
 

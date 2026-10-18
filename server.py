@@ -2480,6 +2480,360 @@ def excel_set_sheet_color_headless(
     )
 
 
+# ── FREEZE PANES & RANGE COPY CONTROLS ──────────────────────────────────────────
+
+@mcp.tool()
+def excel_freeze_custom_panes(row: int, column: int, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Freeze panes at an arbitrary row and column intersection.
+    Args:
+        row: Row index below which to freeze (e.g. 3).
+        column: Column index to the right of which to freeze (e.g. 2 for col B).
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.freeze_custom_panes(row=row, column=column, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_copy_range(source_range: str, destination_cell: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Copy a range with values, formulas, and formatting to a destination cell.
+    Args:
+        source_range: Source range address (e.g. 'A1:D10').
+        destination_cell: Top-left cell where to paste (e.g. 'F1').
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.copy_range(source_range=source_range, destination_cell=destination_cell, sheet_name=sheet_name)
+
+
+
+@mcp.tool()
+def excel_freeze_top_row(sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Freeze the top header row so it stays visible during vertical scrolling.
+    Args:
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.freeze_top_row(sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_freeze_first_column(sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Freeze the first column (Column A) so it stays visible during horizontal scrolling.
+    Args:
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.freeze_first_column(sheet_name=sheet_name)
+
+
+# ── ADVANCED AUTOFIT CONTROLS ───────────────────────────────────────────────────
+
+@mcp.tool()
+def excel_autofit_rows(range_address: Optional[str] = None, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Auto-fit row heights to match cell content.
+    Args:
+        range_address: Optional range to fit (defaults to used range).
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.autofit_rows(range_address=range_address, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_autofit_all(sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Auto-fit all rows and columns across the entire used range in one command.
+    Args:
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.autofit_all(sheet_name=sheet_name)
+
+
+# ── TYPOGRAPHY & FONT STYLES ────────────────────────────────────────────────────
+
+@mcp.tool()
+def excel_set_strikethrough(range_address: str, strikethrough: bool = True, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Apply or remove strikethrough text formatting on a range.
+    Args:
+        range_address: Target cell range (e.g. 'A2:A10').
+        strikethrough: True to apply, False to remove.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.set_strikethrough(range_address=range_address, strikethrough=strikethrough, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_set_subscript(range_address: str, subscript: bool = True, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Apply or remove subscript formatting on a range (e.g. chemical formulas).
+    Args:
+        range_address: Target cell range (e.g. 'B3').
+        subscript: True to apply, False to remove.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.set_subscript(range_address=range_address, subscript=subscript, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_set_superscript(range_address: str, superscript: bool = True, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Apply or remove superscript formatting on a range (e.g. mathematical powers, notes).
+    Args:
+        range_address: Target cell range (e.g. 'C5').
+        superscript: True to apply, False to remove.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.set_superscript(range_address=range_address, superscript=superscript, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_set_underline_style(
+    range_address: str,
+    underline_type: str = "single",
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Set underline style ('none', 'single', 'double', 'single_accounting', 'double_accounting').
+    Args:
+        range_address: Target cell range (e.g. 'A1:E1').
+        underline_type: 'none', 'single', 'double', 'single_accounting', 'double_accounting'.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.set_underline_style(range_address=range_address, underline_type=underline_type, sheet_name=sheet_name)
+
+
+# ── WINDOW & DISPLAY TOGGLES ────────────────────────────────────────────────────
+
+@mcp.tool()
+def excel_toggle_formula_bar(show: bool = True) -> Dict[str, Any]:
+    """Show or hide Excel's formula bar.
+    Args:
+        show: True to show, False to hide.
+    """
+    return controller.toggle_formula_bar(show=show)
+
+
+@mcp.tool()
+def excel_toggle_status_bar(show: bool = True) -> Dict[str, Any]:
+    """Show or hide Excel's bottom status bar.
+    Args:
+        show: True to show, False to hide.
+    """
+    return controller.toggle_status_bar(show=show)
+
+
+@mcp.tool()
+def excel_toggle_scroll_bars(horizontal: bool = True, vertical: bool = True) -> Dict[str, Any]:
+    """Show or hide the horizontal and vertical scrollbars in the active window.
+    Args:
+        horizontal: True to show horizontal scrollbar.
+        vertical: True to show vertical scrollbar.
+    """
+    return controller.toggle_scroll_bars(horizontal=horizontal, vertical=vertical)
+
+
+@mcp.tool()
+def excel_toggle_sheet_tabs(show: bool = True) -> Dict[str, Any]:
+    """Show or hide worksheet tab bar at the bottom of the window.
+    Args:
+        show: True to show, False to hide.
+    """
+    return controller.toggle_sheet_tabs(show=show)
+
+
+# ── THREADED COMMENTS (EXCEL 365 / 2021) ────────────────────────────────────────
+
+@mcp.tool()
+def excel_add_threaded_comment(cell: str, text: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Add a modern threaded comment to a cell.
+    Args:
+        cell: Target cell address (e.g. 'B4').
+        text: Comment message text.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.add_threaded_comment(cell=cell, text=text, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_delete_threaded_comment(cell: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Delete a threaded or standard comment on a cell.
+    Args:
+        cell: Target cell address.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.delete_threaded_comment(cell=cell, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_list_threaded_comments(sheet_name: Optional[str] = None) -> List[Dict[str, Any]]:
+    """List all threaded comments on the worksheet with author, text, date, and replies count.
+    Args:
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.list_threaded_comments(sheet_name=sheet_name)
+
+
+# ── WORKBOOK STRUCTURE & WINDOWS PROTECTION ─────────────────────────────────────
+
+@mcp.tool()
+def excel_protect_workbook_structure(
+    password: str = "",
+    protect_structure: bool = True,
+    protect_windows: bool = False
+) -> Dict[str, Any]:
+    """Protect workbook structure (preventing adding, deleting, hiding, or renaming sheets).
+    Args:
+        password: Optional protection password.
+        protect_structure: Whether to lock sheet structure.
+        protect_windows: Whether to lock window layout.
+    """
+    return controller.protect_workbook_structure(
+        password=password,
+        protect_structure=protect_structure,
+        protect_windows=protect_windows
+    )
+
+
+@mcp.tool()
+def excel_unprotect_workbook_structure(password: str = "") -> Dict[str, Any]:
+    """Unprotect workbook structure.
+    Args:
+        password: Password used when workbook was protected.
+    """
+    return controller.unprotect_workbook_structure(password=password)
+
+
+@mcp.tool()
+def excel_is_workbook_protected() -> Dict[str, Any]:
+    """Check if workbook structure or windows are protected."""
+    return controller.is_workbook_protected()
+
+
+# ── PRINT QUALITY & BLACK AND WHITE ─────────────────────────────────────────────
+
+@mcp.tool()
+def excel_set_print_quality(dpi: int = 300, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Set print resolution quality in DPI (e.g. 300 or 600).
+    Args:
+        dpi: Print quality resolution (e.g. 300, 600).
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.set_print_quality(dpi=dpi, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_set_black_and_white_print(bw: bool = True, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Enable or disable black and white print mode for clean monochrome PDF export or printing.
+    Args:
+        bw: True for monochrome print, False for color.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.set_black_and_white_print(bw=bw, sheet_name=sheet_name)
+
+
+# ── HEADLESS OOXML DATA STRUCTURES & MANIPULATION ────────────────────────────────
+
+@mcp.tool()
+def excel_get_defined_names_headless(file_path: str) -> List[Dict[str, Any]]:
+    """Read all workbook defined names / named ranges headlessly.
+    Args:
+        file_path: Path to the .xlsx file.
+    """
+    return ExcelEngine.get_defined_names_headless(file_path=file_path)
+
+
+@mcp.tool()
+def excel_insert_rows_headless(
+    file_path: str,
+    row_idx: int,
+    amount: int = 1,
+    sheet_name: Optional[str] = None,
+    output_path: Optional[str] = None
+) -> str:
+    """Insert blank rows headlessly at a specific row position.
+    Args:
+        file_path: Path to the .xlsx file.
+        row_idx: 1-based row index to insert at.
+        amount: Number of rows to insert.
+        sheet_name: Optional specific worksheet name.
+        output_path: Optional destination path (overwrites input if not provided).
+    """
+    return ExcelEngine.insert_rows_headless(
+        file_path=file_path,
+        row_idx=row_idx,
+        amount=amount,
+        sheet_name=sheet_name,
+        output_path=output_path
+    )
+
+
+@mcp.tool()
+def excel_delete_rows_headless(
+    file_path: str,
+    row_idx: int,
+    amount: int = 1,
+    sheet_name: Optional[str] = None,
+    output_path: Optional[str] = None
+) -> str:
+    """Delete rows headlessly at a specific row position.
+    Args:
+        file_path: Path to the .xlsx file.
+        row_idx: 1-based row index to delete.
+        amount: Number of rows to delete.
+        sheet_name: Optional specific worksheet name.
+        output_path: Optional destination path (overwrites input if not provided).
+    """
+    return ExcelEngine.delete_rows_headless(
+        file_path=file_path,
+        row_idx=row_idx,
+        amount=amount,
+        sheet_name=sheet_name,
+        output_path=output_path
+    )
+
+
+@mcp.tool()
+def excel_insert_cols_headless(
+    file_path: str,
+    col_idx: int,
+    amount: int = 1,
+    sheet_name: Optional[str] = None,
+    output_path: Optional[str] = None
+) -> str:
+    """Insert blank columns headlessly at a specific column position.
+    Args:
+        file_path: Path to the .xlsx file.
+        col_idx: 1-based column index to insert at.
+        amount: Number of columns to insert.
+        sheet_name: Optional specific worksheet name.
+        output_path: Optional destination path (overwrites input if not provided).
+    """
+    return ExcelEngine.insert_cols_headless(
+        file_path=file_path,
+        col_idx=col_idx,
+        amount=amount,
+        sheet_name=sheet_name,
+        output_path=output_path
+    )
+
+
+@mcp.tool()
+def excel_delete_cols_headless(
+    file_path: str,
+    col_idx: int,
+    amount: int = 1,
+    sheet_name: Optional[str] = None,
+    output_path: Optional[str] = None
+) -> str:
+    """Delete columns headlessly at a specific column position.
+    Args:
+        file_path: Path to the .xlsx file.
+        col_idx: 1-based column index to delete.
+        amount: Number of columns to delete.
+        sheet_name: Optional specific worksheet name.
+        output_path: Optional destination path (overwrites input if not provided).
+    """
+    return ExcelEngine.delete_cols_headless(
+        file_path=file_path,
+        col_idx=col_idx,
+        amount=amount,
+        sheet_name=sheet_name,
+        output_path=output_path
+    )
+
+
 def main():
     """Run the FastMCP server."""
     mcp.run()
@@ -2487,5 +2841,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
