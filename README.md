@@ -16,7 +16,7 @@ A comprehensive **Model Context Protocol (MCP)** server for Windows enabling AI 
 
 ---
 
-## 🛠️ Complete List of Tools (201 Tools)
+## 🛠️ Complete List of Tools (223 Tools)
 
 ### 1. Workbook & Window Management
 - `excel_status()`: Get current running state, open workbooks count, active sheet, active cell, and used range.
@@ -252,7 +252,28 @@ A comprehensive **Model Context Protocol (MCP)** server for Windows enabling AI 
 - `excel_set_print_quality(dpi)`: Set print resolution quality in DPI (300, 600).
 - `excel_set_black_and_white_print(bw)`: Enable clean monochrome PDF export or printing.
 
-### 29. Headless OOXML Engine (openpyxl)
+### 29. Shape Formatting, Z-Order & Multi-Window Tiling
+- `excel_set_shape_fill_color(shape_name, hex_color, transparency)`: Change solid fill color and opacity of shapes.
+- `excel_set_shape_line_color(shape_name, hex_color, weight)`: Set outline border color and thickness.
+- `excel_set_shape_text(shape_name, text, font_size, bold, font_color)`: Insert or replace text inside shapes.
+- `excel_delete_shape_by_name(shape_name)`: Remove a specific shape by name.
+- `excel_bring_shape_to_front(shape_name)`: Bring a shape to front of z-order stacking layer.
+- `excel_send_shape_to_back(shape_name)`: Send a shape to back of z-order stacking layer.
+- `excel_minimize_window()`: Minimize active Excel window.
+- `excel_restore_window()`: Restore active Excel window to normal size.
+- `excel_maximize_window()`: Maximize active Excel window.
+- `excel_tile_windows(tile_style)`: Tile open workbook windows ('horizontal', 'vertical', 'tiled', 'cascade').
+
+### 30. Flowchart Process Blocks & PivotTable Customization
+- `excel_add_connector_arrow(start_cell, end_cell, color, weight)`: Draw arrow connecting center of two cells.
+- `excel_add_flowchart_process_block(cell, text, width, height, bg_color, border_color)`: Insert process rectangle block.
+- `excel_add_flowchart_decision_diamond(cell, text, width, height, bg_color, border_color)`: Insert decision diamond block.
+- `excel_change_pivot_field_calculation(pivot_name, data_field_name, calculation)`: Change aggregation ('sum', 'average', etc.).
+- `excel_set_pivot_layout(pivot_name, layout)`: Set layout format ('tabular', 'compact', 'outline').
+- `excel_toggle_pivot_grand_totals(pivot_name, rows, columns)`: Toggle row and column grand totals.
+- `excel_refresh_pivot_table(pivot_name)`: Refresh data cache for a PivotTable.
+
+### 31. Headless OOXML Engine (openpyxl)
 - `excel_create_from_markdown(markdown_table, output_path, sheet_name)`: Convert Markdown table to styled `.xlsx`.
 - `excel_read_to_markdown(file_path, sheet_name)`: Read `.xlsx` table into clean Markdown.
 - `excel_json_to_sheet(json_data, output_path, sheet_name)`: Export JSON records to styled `.xlsx`.
@@ -276,6 +297,11 @@ A comprehensive **Model Context Protocol (MCP)** server for Windows enabling AI 
 - `excel_delete_rows_headless(file_path, row_idx, amount)`: Delete rows headlessly.
 - `excel_insert_cols_headless(file_path, col_idx, amount)`: Insert blank columns headlessly.
 - `excel_delete_cols_headless(file_path, col_idx, amount)`: Delete columns headlessly.
+- `excel_set_gridlines_headless(file_path, show)`: Toggle gridlines visibility headlessly.
+- `excel_set_zoom_headless(file_path, zoom_scale)`: Set worksheet zoom scale percentage headlessly.
+- `excel_add_image_headless(file_path, image_path, cell, width, height)`: Embed images into spreadsheet headlessly.
+- `excel_auto_fit_columns_headless(file_path)`: Auto-fit column widths to text content headlessly.
+- `excel_freeze_panes_headless(file_path, cell)`: Freeze panes at any cell coordinate headlessly.
 
 ---
 
@@ -325,7 +351,11 @@ uv run python test_mega_tools.py
 
 # Giga Tools: Headless Defined Names, Row/Column Insertions & Deletions
 uv run python test_giga_tools.py
+
+# Tera Tools: Headless Gridlines, Zoom, Auto-fit Columns, and Freeze Panes
+uv run python test_tera_tools.py
 ```
+
 
 
 

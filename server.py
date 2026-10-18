@@ -2834,6 +2834,414 @@ def excel_delete_cols_headless(
     )
 
 
+# ── SHAPE FORMATTING & MANIPULATION ─────────────────────────────────────────────
+
+@mcp.tool()
+def excel_set_shape_fill_color(
+    shape_name: str,
+    hex_color: str,
+    transparency: float = 0.0,
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Set solid fill color and transparency for an existing shape.
+    Args:
+        shape_name: Name of the shape.
+        hex_color: Color string (e.g. '#2563EB').
+        transparency: Opacity from 0.0 (opaque) to 1.0 (fully transparent).
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.set_shape_fill_color(
+        shape_name=shape_name,
+        hex_color=hex_color,
+        transparency=transparency,
+        sheet_name=sheet_name
+    )
+
+
+@mcp.tool()
+def excel_set_shape_line_color(
+    shape_name: str,
+    hex_color: str,
+    weight: float = 1.5,
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Set outline border color and thickness for an existing shape.
+    Args:
+        shape_name: Name of the shape.
+        hex_color: Color string (e.g. '#1E293B').
+        weight: Line thickness in points.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.set_shape_line_color(
+        shape_name=shape_name,
+        hex_color=hex_color,
+        weight=weight,
+        sheet_name=sheet_name
+    )
+
+
+@mcp.tool()
+def excel_set_shape_text(
+    shape_name: str,
+    text: str,
+    font_size: float = 12.0,
+    bold: bool = False,
+    font_color: str = "#000000",
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Set or update text inside an existing shape or callout box.
+    Args:
+        shape_name: Name of the shape.
+        text: Text to display.
+        font_size: Font size in points.
+        bold: Whether font is bold.
+        font_color: Font color hex string.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.set_shape_text(
+        shape_name=shape_name,
+        text=text,
+        font_size=font_size,
+        bold=bold,
+        font_color=font_color,
+        sheet_name=sheet_name
+    )
+
+
+@mcp.tool()
+def excel_delete_shape_by_name(shape_name: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Delete an existing shape by its name identifier.
+    Args:
+        shape_name: Name of the shape to delete.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.delete_shape_by_name(shape_name=shape_name, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_bring_shape_to_front(shape_name: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Bring a shape to the front of the z-order stacking layer.
+    Args:
+        shape_name: Name of the shape.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.bring_shape_to_front(shape_name=shape_name, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_send_shape_to_back(shape_name: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Send a shape to the back of the z-order stacking layer.
+    Args:
+        shape_name: Name of the shape.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.send_shape_to_back(shape_name=shape_name, sheet_name=sheet_name)
+
+
+
+# ── WORKBOOK WINDOW STATES & TILING ─────────────────────────────────────────────
+
+@mcp.tool()
+def excel_minimize_window() -> Dict[str, Any]:
+    """Minimize the active Excel desktop window."""
+    return controller.minimize_window()
+
+
+@mcp.tool()
+def excel_restore_window() -> Dict[str, Any]:
+    """Restore the active Excel window to normal floating dimensions."""
+    return controller.restore_window()
+
+
+@mcp.tool()
+def excel_maximize_window() -> Dict[str, Any]:
+    """Maximize the active Excel desktop window."""
+    return controller.maximize_window()
+
+
+@mcp.tool()
+def excel_tile_windows(tile_style: str = "horizontal") -> Dict[str, Any]:
+    """Tile open workbook windows ('horizontal', 'vertical', 'tiled', 'cascade').
+    Args:
+        tile_style: 'horizontal', 'vertical', 'tiled', or 'cascade'.
+    """
+    return controller.tile_windows(tile_style=tile_style)
+
+
+# ── FLOWCHART BLOCKS & CONNECTORS ───────────────────────────────────────────────
+
+@mcp.tool()
+def excel_add_connector_arrow(
+    start_cell: str,
+    end_cell: str,
+    color: str = "#2563EB",
+    weight: float = 2.0,
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Draw an arrow line connecting the center of two cells.
+    Args:
+        start_cell: Cell where arrow begins (e.g. 'B2').
+        end_cell: Cell where arrow points (e.g. 'D2').
+        color: Line color hex string.
+        weight: Line thickness in points.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.add_connector_arrow(
+        start_cell=start_cell,
+        end_cell=end_cell,
+        color=color,
+        weight=weight,
+        sheet_name=sheet_name
+    )
+
+
+@mcp.tool()
+def excel_add_flowchart_process_block(
+    cell: str,
+    text: str,
+    width: float = 120.0,
+    height: float = 50.0,
+    bg_color: str = "#EFF6FF",
+    border_color: str = "#3B82F6",
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Insert a styled flowchart process rectangle block with centered text.
+    Args:
+        cell: Anchor cell coordinate (e.g. 'C3').
+        text: Block text label.
+        width: Box width in points.
+        height: Box height in points.
+        bg_color: Background hex color.
+        border_color: Border line hex color.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.add_flowchart_process_block(
+        cell=cell,
+        text=text,
+        width=width,
+        height=height,
+        bg_color=bg_color,
+        border_color=border_color,
+        sheet_name=sheet_name
+    )
+
+
+@mcp.tool()
+def excel_add_flowchart_decision_diamond(
+    cell: str,
+    text: str,
+    width: float = 100.0,
+    height: float = 75.0,
+    bg_color: str = "#FEF3C7",
+    border_color: str = "#F59E0B",
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Insert a styled flowchart decision diamond with centered text.
+    Args:
+        cell: Anchor cell coordinate (e.g. 'E3').
+        text: Decision question label.
+        width: Diamond width in points.
+        height: Diamond height in points.
+        bg_color: Background hex color.
+        border_color: Border line hex color.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.add_flowchart_decision_diamond(
+        cell=cell,
+        text=text,
+        width=width,
+        height=height,
+        bg_color=bg_color,
+        border_color=border_color,
+        sheet_name=sheet_name
+    )
+
+
+# ── ADVANCED PIVOT TABLE OPERATIONS ─────────────────────────────────────────────
+
+@mcp.tool()
+def excel_change_pivot_field_calculation(
+    pivot_name: str,
+    data_field_name: str,
+    calculation: str = "sum",
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Change aggregation calculation on a PivotTable data field ('sum', 'count', 'average', 'max', 'min', 'product').
+    Args:
+        pivot_name: Name of the PivotTable.
+        data_field_name: Name of the data value field.
+        calculation: 'sum', 'count', 'average', 'max', 'min', or 'product'.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.change_pivot_field_calculation(
+        pivot_name=pivot_name,
+        data_field_name=data_field_name,
+        calculation=calculation,
+        sheet_name=sheet_name
+    )
+
+
+@mcp.tool()
+def excel_set_pivot_layout(pivot_name: str, layout: str = "tabular", sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Set PivotTable report layout ('tabular', 'compact', 'outline').
+    Args:
+        pivot_name: Name of the PivotTable.
+        layout: 'tabular', 'compact', or 'outline'.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.set_pivot_layout(pivot_name=pivot_name, layout=layout, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_toggle_pivot_grand_totals(
+    pivot_name: str,
+    rows: bool = True,
+    columns: bool = True,
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Toggle row and column grand totals for a PivotTable.
+    Args:
+        pivot_name: Name of the PivotTable.
+        rows: Whether to display row grand totals.
+        columns: Whether to display column grand totals.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.toggle_pivot_grand_totals(
+        pivot_name=pivot_name,
+        rows=rows,
+        columns=columns,
+        sheet_name=sheet_name
+    )
+
+
+@mcp.tool()
+def excel_refresh_pivot_table(pivot_name: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Refresh data cache for a specific PivotTable.
+    Args:
+        pivot_name: Name of the PivotTable to update.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.refresh_pivot_table(pivot_name=pivot_name, sheet_name=sheet_name)
+
+
+# ── HEADLESS OOXML SPREADSHEET ENHANCEMENTS ──────────────────────────────────────
+
+@mcp.tool()
+def excel_set_gridlines_headless(
+    file_path: str,
+    show: bool = True,
+    sheet_name: Optional[str] = None,
+    output_path: Optional[str] = None
+) -> str:
+    """Toggle gridlines visibility in an .xlsx file headlessly.
+    Args:
+        file_path: Path to the .xlsx file.
+        show: True to show gridlines, False to hide.
+        sheet_name: Optional specific worksheet name.
+        output_path: Optional destination path (overwrites input if not provided).
+    """
+    return ExcelEngine.set_gridlines_headless(
+        file_path=file_path,
+        show=show,
+        sheet_name=sheet_name,
+        output_path=output_path
+    )
+
+
+@mcp.tool()
+def excel_set_zoom_headless(
+    file_path: str,
+    zoom_scale: int = 100,
+    sheet_name: Optional[str] = None,
+    output_path: Optional[str] = None
+) -> str:
+    """Set worksheet zoom scale percentage in an .xlsx file headlessly.
+    Args:
+        file_path: Path to the .xlsx file.
+        zoom_scale: Zoom percentage (e.g. 85, 100, 120).
+        sheet_name: Optional specific worksheet name.
+        output_path: Optional destination path (overwrites input if not provided).
+    """
+    return ExcelEngine.set_zoom_headless(
+        file_path=file_path,
+        zoom_scale=zoom_scale,
+        sheet_name=sheet_name,
+        output_path=output_path
+    )
+
+
+@mcp.tool()
+def excel_add_image_headless(
+    file_path: str,
+    image_path: str,
+    cell: str = "A1",
+    width: Optional[float] = None,
+    height: Optional[float] = None,
+    sheet_name: Optional[str] = None,
+    output_path: Optional[str] = None
+) -> str:
+    """Embed an image into an Excel spreadsheet headlessly.
+    Args:
+        file_path: Path to the .xlsx file.
+        image_path: Path to the image file (.png, .jpg).
+        cell: Anchor cell coordinate (e.g. 'B2').
+        width: Optional display width.
+        height: Optional display height.
+        sheet_name: Optional specific worksheet name.
+        output_path: Optional destination path (overwrites input if not provided).
+    """
+    return ExcelEngine.add_image_headless(
+        file_path=file_path,
+        image_path=image_path,
+        cell=cell,
+        width=width,
+        height=height,
+        sheet_name=sheet_name,
+        output_path=output_path
+    )
+
+
+@mcp.tool()
+def excel_auto_fit_columns_headless(
+    file_path: str,
+    sheet_name: Optional[str] = None,
+    output_path: Optional[str] = None
+) -> str:
+    """Compute and auto-fit column widths to text content in an .xlsx file headlessly.
+    Args:
+        file_path: Path to the .xlsx file.
+        sheet_name: Optional specific worksheet name.
+        output_path: Optional destination path (overwrites input if not provided).
+    """
+    return ExcelEngine.auto_fit_columns_headless(
+        file_path=file_path,
+        sheet_name=sheet_name,
+        output_path=output_path
+    )
+
+
+@mcp.tool()
+def excel_freeze_panes_headless(
+    file_path: str,
+    cell: str = "A2",
+    sheet_name: Optional[str] = None,
+    output_path: Optional[str] = None
+) -> str:
+    """Freeze panes at a specific cell coordinate in an .xlsx file headlessly.
+    Args:
+        file_path: Path to the .xlsx file.
+        cell: Cell coordinate below/right of which to freeze (e.g. 'A2' for top row).
+        sheet_name: Optional specific worksheet name.
+        output_path: Optional destination path (overwrites input if not provided).
+    """
+    return ExcelEngine.freeze_panes_headless(
+        file_path=file_path,
+        cell=cell,
+        sheet_name=sheet_name,
+        output_path=output_path
+    )
+
+
 def main():
     """Run the FastMCP server."""
     mcp.run()
@@ -2841,6 +3249,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 

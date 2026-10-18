@@ -2789,7 +2789,241 @@ class ExcelController:
         sheet.PageSetup.BlackAndWhite = bw
         return {"status": "success", "black_and_white": bw}
 
+    # ── SHAPE FORMATTING & MANIPULATION ───────────────────────────────────────
+
+    def set_shape_fill_color(
+        self,
+        shape_name: str,
+        hex_color: str,
+        transparency: float = 0.0,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Set solid fill color and transparency for an existing shape."""
+        sheet = self.get_sheet(sheet_name)
+        sh = sheet.Shapes(shape_name)
+        sh.Fill.Solid()
+        sh.Fill.ForeColor.RGB = hex_to_bgr_int(hex_color)
+        sh.Fill.Transparency = transparency
+        return {"status": "success", "shape": shape_name, "fill_color": hex_color}
+
+    def set_shape_line_color(
+        self,
+        shape_name: str,
+        hex_color: str,
+        weight: float = 1.5,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Set outline border color and thickness for an existing shape."""
+        sheet = self.get_sheet(sheet_name)
+        sh = sheet.Shapes(shape_name)
+        sh.Line.Visible = True
+        sh.Line.ForeColor.RGB = hex_to_bgr_int(hex_color)
+        sh.Line.Weight = weight
+        return {"status": "success", "shape": shape_name, "line_color": hex_color, "weight": weight}
+
+    def set_shape_text(
+        self,
+        shape_name: str,
+        text: str,
+        font_size: float = 12.0,
+        bold: bool = False,
+        font_color: str = "#000000",
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Set or update text inside an existing shape or callout box."""
+        sheet = self.get_sheet(sheet_name)
+        sh = sheet.Shapes(shape_name)
+        sh.TextFrame2.TextRange.Text = text
+        sh.TextFrame2.TextRange.Font.Size = font_size
+        sh.TextFrame2.TextRange.Font.Bold = bold
+        sh.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = hex_to_bgr_int(font_color)
+        return {"status": "success", "shape": shape_name, "text": text}
+
+    def delete_shape_by_name(self, shape_name: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Delete an existing shape by its name identifier."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Shapes(shape_name).Delete()
+        return {"status": "success", "deleted_shape": shape_name}
+
+    def bring_shape_to_front(self, shape_name: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Bring a shape to the front of the z-order stacking layer."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Shapes(shape_name).ZOrder(0)  # msoBringToFront = 0
+        return {"status": "success", "shape": shape_name, "z_order": "front"}
+
+    def send_shape_to_back(self, shape_name: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Send a shape to the back of the z-order stacking layer."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Shapes(shape_name).ZOrder(1)  # msoSendToBack = 1
+        return {"status": "success", "shape": shape_name, "z_order": "back"}
+
+
+    # ── WORKBOOK WINDOW STATES & TILING ───────────────────────────────────────
+
+    def minimize_window(self) -> Dict[str, Any]:
+        """Minimize the active Excel desktop window."""
+        app = self.get_app(bring_to_front=False)
+        app.WindowState = -4140  # xlMinimized
+        return {"status": "success", "window_state": "minimized"}
+
+    def restore_window(self) -> Dict[str, Any]:
+        """Restore the active Excel window to normal floating dimensions."""
+        app = self.get_app(bring_to_front=False)
+        app.WindowState = -4143  # xlNormal
+        return {"status": "success", "window_state": "normal"}
+
+    def maximize_window(self) -> Dict[str, Any]:
+        """Maximize the active Excel desktop window."""
+        app = self.get_app(bring_to_front=False)
+        app.WindowState = -4137  # xlMaximized
+        return {"status": "success", "window_state": "maximized"}
+
+    def tile_windows(self, tile_style: str = "horizontal") -> Dict[str, Any]:
+        """Tile open workbook windows ('horizontal', 'vertical', 'tiled', 'cascade')."""
+        app = self.get_app(bring_to_front=False)
+        style_map = {
+            "tiled": 1,
+            "horizontal": -4128,
+            "vertical": -4166,
+            "cascade": 7
+        }
+        xl_style = style_map.get(tile_style.lower(), -4128)
+        app.Windows.Arrange(ArrangeStyle=xl_style)
+        return {"status": "success", "tile_style": tile_style}
+
+    # ── FLOWCHART BLOCKS & CONNECTORS ─────────────────────────────────────────
+
+    def add_connector_arrow(
+        self,
+        start_cell: str,
+        end_cell: str,
+        color: str = "#2563EB",
+        weight: float = 2.0,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Draw an arrow line connecting the center of two cells."""
+        sheet = self.get_sheet(sheet_name)
+        s_rng = sheet.Range(start_cell)
+        e_rng = sheet.Range(end_cell)
+        begin_x = s_rng.Left + (s_rng.Width / 2.0)
+        begin_y = s_rng.Top + (s_rng.Height / 2.0)
+        end_x = e_rng.Left + (e_rng.Width / 2.0)
+        end_y = e_rng.Top + (e_rng.Height / 2.0)
+        conn = sheet.Shapes.AddConnector(1, begin_x, begin_y, end_x, end_y)
+        conn.Line.EndArrowheadStyle = 2  # msoArrowheadTriangle
+        conn.Line.ForeColor.RGB = hex_to_bgr_int(color)
+        conn.Line.Weight = weight
+        return {"status": "success", "name": conn.Name, "from": start_cell, "to": end_cell}
+
+    def add_flowchart_process_block(
+        self,
+        cell: str,
+        text: str,
+        width: float = 120.0,
+        height: float = 50.0,
+        bg_color: str = "#EFF6FF",
+        border_color: str = "#3B82F6",
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Insert a styled flowchart process rectangle block with centered text."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(cell)
+        sh = sheet.Shapes.AddShape(1, rng.Left, rng.Top, width, height)
+        sh.Fill.Solid()
+        sh.Fill.ForeColor.RGB = hex_to_bgr_int(bg_color)
+        sh.Line.ForeColor.RGB = hex_to_bgr_int(border_color)
+        sh.Line.Weight = 1.5
+        sh.TextFrame2.TextRange.Text = text
+        sh.TextFrame2.TextRange.Font.Size = 10
+        sh.TextFrame2.TextRange.Font.Bold = True
+        sh.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = hex_to_bgr_int("#1E293B")
+        sh.TextFrame2.TextRange.ParagraphFormat.Alignment = 2  # Center
+        return {"status": "success", "shape_name": sh.Name, "cell": cell, "text": text}
+
+    def add_flowchart_decision_diamond(
+        self,
+        cell: str,
+        text: str,
+        width: float = 100.0,
+        height: float = 75.0,
+        bg_color: str = "#FEF3C7",
+        border_color: str = "#F59E0B",
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Insert a styled flowchart decision diamond with centered text."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(cell)
+        sh = sheet.Shapes.AddShape(4, rng.Left, rng.Top, width, height)
+        sh.Fill.Solid()
+        sh.Fill.ForeColor.RGB = hex_to_bgr_int(bg_color)
+        sh.Line.ForeColor.RGB = hex_to_bgr_int(border_color)
+        sh.Line.Weight = 1.5
+        sh.TextFrame2.TextRange.Text = text
+        sh.TextFrame2.TextRange.Font.Size = 9
+        sh.TextFrame2.TextRange.Font.Bold = True
+        sh.TextFrame2.TextRange.Font.Fill.ForeColor.RGB = hex_to_bgr_int("#78350F")
+        sh.TextFrame2.TextRange.ParagraphFormat.Alignment = 2  # Center
+        return {"status": "success", "shape_name": sh.Name, "cell": cell, "text": text}
+
+    # ── ADVANCED PIVOT TABLE OPERATIONS ───────────────────────────────────────
+
+    def change_pivot_field_calculation(
+        self,
+        pivot_name: str,
+        data_field_name: str,
+        calculation: str = "sum",
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Change aggregation calculation on a PivotTable data field ('sum', 'count', 'average', 'max', 'min', 'product')."""
+        sheet = self.get_sheet(sheet_name)
+        pt = sheet.PivotTables(pivot_name)
+        df = pt.DataFields(data_field_name)
+        calc_map = {
+            "sum": -4157,
+            "count": -4112,
+            "average": -4106,
+            "max": -4136,
+            "min": -4139,
+            "product": -4149
+        }
+        df.Function = calc_map.get(calculation.lower(), -4157)
+        return {"status": "success", "pivot": pivot_name, "field": data_field_name, "calculation": calculation}
+
+    def set_pivot_layout(self, pivot_name: str, layout: str = "tabular", sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Set PivotTable report layout ('tabular', 'compact', 'outline')."""
+        sheet = self.get_sheet(sheet_name)
+        pt = sheet.PivotTables(pivot_name)
+        layout_map = {
+            "compact": 0,
+            "tabular": 1,
+            "outline": 2
+        }
+        pt.RowAxisLayout(layout_map.get(layout.lower(), 1))
+        return {"status": "success", "pivot": pivot_name, "layout": layout}
+
+    def toggle_pivot_grand_totals(
+        self,
+        pivot_name: str,
+        rows: bool = True,
+        columns: bool = True,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Toggle row and column grand totals for a PivotTable."""
+        sheet = self.get_sheet(sheet_name)
+        pt = sheet.PivotTables(pivot_name)
+        pt.RowGrand = rows
+        pt.ColumnGrand = columns
+        return {"status": "success", "pivot": pivot_name, "row_grand_totals": rows, "column_grand_totals": columns}
+
+    def refresh_pivot_table(self, pivot_name: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Refresh data cache for a specific PivotTable."""
+        sheet = self.get_sheet(sheet_name)
+        pt = sheet.PivotTables(pivot_name)
+        pt.Update()
+        return {"status": "success", "pivot_refreshed": pivot_name}
+
 
 # Singleton instance
 controller = ExcelController()
+
 

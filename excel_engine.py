@@ -532,5 +532,86 @@ class ExcelEngine:
         wb.save(dest)
         return dest
 
+    @staticmethod
+    def set_gridlines_headless(file_path: str, show: bool = True, sheet_name: Optional[str] = None, output_path: Optional[str] = None) -> str:
+        """Toggle gridlines visibility headlessly."""
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+        ws.sheet_view.showGridLines = show
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return dest
+
+    @staticmethod
+    def set_zoom_headless(file_path: str, zoom_scale: int = 100, sheet_name: Optional[str] = None, output_path: Optional[str] = None) -> str:
+        """Set worksheet zoom scale percentage headlessly."""
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+        ws.sheet_view.zoomScale = zoom_scale
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return dest
+
+    @staticmethod
+    def add_image_headless(
+        file_path: str,
+        image_path: str,
+        cell: str = "A1",
+        width: Optional[float] = None,
+        height: Optional[float] = None,
+        sheet_name: Optional[str] = None,
+        output_path: Optional[str] = None
+    ) -> str:
+        """Embed an image into an Excel spreadsheet headlessly."""
+        import openpyxl.drawing.image
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+        img = openpyxl.drawing.image.Image(os.path.abspath(image_path))
+        if width:
+            img.width = width
+        if height:
+            img.height = height
+        ws.add_image(img, cell)
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return dest
+
+    @staticmethod
+    def auto_fit_columns_headless(file_path: str, sheet_name: Optional[str] = None, output_path: Optional[str] = None) -> str:
+        """Compute and auto-fit column widths to text content headlessly."""
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+        for col in ws.columns:
+            max_len = 0
+            col_letter = get_column_letter(col[0].column)
+            for c in col:
+                if c.value is not None:
+                    max_len = max(max_len, len(str(c.value)))
+            ws.column_dimensions[col_letter].width = max(max_len + 3, 10)
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return dest
+
+    @staticmethod
+    def freeze_panes_headless(file_path: str, cell: str = "A2", sheet_name: Optional[str] = None, output_path: Optional[str] = None) -> str:
+        """Freeze panes at a specific cell coordinate headlessly."""
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+        ws.freeze_panes = cell
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return dest
+
+
 
 
