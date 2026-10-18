@@ -2137,6 +2137,349 @@ def excel_unhide_all_sheets_headless(file_path: str, output_path: Optional[str] 
     return ExcelEngine.unhide_all_sheets_headless(file_path=file_path, output_path=output_path)
 
 
+# ── ADVANCED AUTOFILTER MANAGEMENT ──────────────────────────────────────────────
+
+@mcp.tool()
+def excel_clear_sheet_filters(sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Clear active filter selections on the worksheet without removing filter dropdown arrows.
+    Args:
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.clear_sheet_filters(sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_apply_autofilter_column(
+    range_address: str,
+    field_index: int = 1,
+    criteria: str = "",
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Apply a filter criteria to a specific column within an AutoFilter range.
+    Args:
+        range_address: Target table or header range (e.g. 'A1:E100').
+        field_index: 1-based column offset in the range.
+        criteria: Filter condition (e.g. '>100', 'Pending', '=Completed').
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.apply_autofilter_column(
+        range_address=range_address,
+        field_index=field_index,
+        criteria=criteria,
+        sheet_name=sheet_name
+    )
+
+
+@mcp.tool()
+def excel_remove_autofilter(sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Remove AutoFilter mode and dropdown arrows completely from the worksheet.
+    Args:
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.remove_autofilter(sheet_name=sheet_name)
+
+
+# ── ADVANCED ALIGNMENT & TEXT FITTING ────────────────────────────────────────────
+
+@mcp.tool()
+def excel_wrap_text(range_address: str, wrap: bool = True, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Enable or disable text wrapping on a range of cells.
+    Args:
+        range_address: Target range (e.g. 'B2:B20').
+        wrap: Whether text should wrap to multiple lines.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.wrap_text(range_address=range_address, wrap=wrap, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_shrink_to_fit(range_address: str, shrink: bool = True, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Enable or disable Shrink-to-Fit on cells to automatically fit text within column width.
+    Args:
+        range_address: Target range (e.g. 'A1:C10').
+        shrink: Whether to shrink font size visually to fit cell boundaries.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.shrink_to_fit(range_address=range_address, shrink=shrink, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_set_cell_orientation(range_address: str, degrees: int = 0, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Set text rotation orientation angle in degrees (-90 to +90).
+    Args:
+        range_address: Target range (e.g. 'A1:G1').
+        degrees: Angle in degrees (-90 to 90, e.g. 45 for diagonal headers).
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.set_cell_orientation(range_address=range_address, degrees=degrees, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_flash_fill_column(range_address: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Trigger Excel's intelligent Flash Fill down a column based on pattern examples.
+    Args:
+        range_address: Range column with examples and blanks to fill (e.g. 'C2:C50').
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.flash_fill_column(range_address=range_address, sheet_name=sheet_name)
+
+
+# ── ADVANCED CHART ELEMENTS & STYLING ───────────────────────────────────────────
+
+@mcp.tool()
+def excel_set_chart_title(
+    chart_name: str,
+    title: str,
+    font_size: float = 14.0,
+    bold: bool = True,
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Configure chart title text, font size, and bold formatting directly.
+    Args:
+        chart_name: Name of the chart object.
+        title: Title string.
+        font_size: Font size in points.
+        bold: Whether title font is bold.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.set_chart_title(
+        chart_name=chart_name,
+        title=title,
+        font_size=font_size,
+        bold=bold,
+        sheet_name=sheet_name
+    )
+
+
+@mcp.tool()
+def excel_set_chart_legend(
+    chart_name: str,
+    position: str = "right",
+    show_legend: bool = True,
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Configure chart legend visibility and placement ('top', 'bottom', 'left', 'right', 'corner').
+    Args:
+        chart_name: Name of the chart object.
+        position: Placement ('top', 'bottom', 'left', 'right', 'corner').
+        show_legend: Whether legend is displayed.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.set_chart_legend(
+        chart_name=chart_name,
+        position=position,
+        show_legend=show_legend,
+        sheet_name=sheet_name
+    )
+
+
+@mcp.tool()
+def excel_set_chart_axes_titles(
+    chart_name: str,
+    x_title: Optional[str] = None,
+    y_title: Optional[str] = None,
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Set horizontal category (X) and vertical value (Y) axis title labels on a chart.
+    Args:
+        chart_name: Name of the chart object.
+        x_title: Optional horizontal X-axis title label.
+        y_title: Optional vertical Y-axis title label.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.set_chart_axes_titles(
+        chart_name=chart_name,
+        x_title=x_title,
+        y_title=y_title,
+        sheet_name=sheet_name
+    )
+
+
+@mcp.tool()
+def excel_set_chart_style(chart_name: str, style_id: int = 201, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Apply a built-in modern visual chart style preset by ID (e.g. 201, 202, 215).
+    Args:
+        chart_name: Name of the chart object.
+        style_id: Numeric Excel chart style identifier.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.set_chart_style(chart_name=chart_name, style_id=style_id, sheet_name=sheet_name)
+
+
+# ── SECURITY & FORM CELL LOCKING ────────────────────────────────────────────────
+
+@mcp.tool()
+def excel_lock_cells(range_address: str, locked: bool = True, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Lock or unlock cells. Unlocked cells can still be edited when worksheet protection is active.
+    Args:
+        range_address: Target cell range (e.g. 'C4:C20').
+        locked: True to lock, False to unlock for editing in protected sheets.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.lock_cells(range_address=range_address, locked=locked, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_hide_formulas(range_address: str, hidden: bool = True, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Hide formulas in the formula bar for cells when worksheet protection is active.
+    Args:
+        range_address: Target cell range (e.g. 'D2:D50').
+        hidden: True to hide formulas from users.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.hide_formulas(range_address=range_address, hidden=hidden, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_is_sheet_protected(sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Query worksheet protection status (contents, objects, scenarios).
+    Args:
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.is_sheet_protected(sheet_name=sheet_name)
+
+
+# ── FORMULA AUDITING & PRECEDENTS/DEPENDENTS ────────────────────────────────────
+
+@mcp.tool()
+def excel_get_precedents(cell_address: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Return the range addresses of all cells directly referenced by the formula in this cell.
+    Args:
+        cell_address: Cell containing a formula (e.g. 'E10').
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.get_precedents(cell_address=cell_address, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_get_dependents(cell_address: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+    """Return the range addresses of all cells that depend on the value in this cell.
+    Args:
+        cell_address: Target cell address (e.g. 'B4').
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.get_dependents(cell_address=cell_address, sheet_name=sheet_name)
+
+
+# ── ROW & COLUMN VISIBILITY ─────────────────────────────────────────────────────
+
+@mcp.tool()
+def excel_set_row_visibility(
+    row_index: Union[int, str],
+    hidden: bool = True,
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Hide or unhide specific rows.
+    Args:
+        row_index: Row number or range (e.g. 5 or '5:10').
+        hidden: True to hide, False to unhide.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.set_row_visibility(row_index=row_index, hidden=hidden, sheet_name=sheet_name)
+
+
+@mcp.tool()
+def excel_set_column_visibility(
+    column: Union[int, str],
+    hidden: bool = True,
+    sheet_name: Optional[str] = None
+) -> Dict[str, Any]:
+    """Hide or unhide specific columns.
+    Args:
+        column: Column letter or range (e.g. 'C' or 'C:E').
+        hidden: True to hide, False to unhide.
+        sheet_name: Optional specific worksheet name.
+    """
+    return controller.set_column_visibility(column=column, hidden=hidden, sheet_name=sheet_name)
+
+
+# ── HEADLESS OOXML EXPANSIONS ───────────────────────────────────────────────────
+
+@mcp.tool()
+def excel_copy_sheet_headless(
+    file_path: str,
+    source_sheet: str,
+    new_sheet_name: str,
+    output_path: Optional[str] = None
+) -> str:
+    """Duplicate a worksheet with all its data, styling, and formulas headlessly.
+    Args:
+        file_path: Path to the .xlsx file.
+        source_sheet: Name of the sheet to clone.
+        new_sheet_name: Name for the cloned sheet.
+        output_path: Optional destination path (overwrites input if not provided).
+    """
+    return ExcelEngine.copy_sheet_headless(
+        file_path=file_path,
+        source_sheet=source_sheet,
+        new_sheet_name=new_sheet_name,
+        output_path=output_path
+    )
+
+
+@mcp.tool()
+def excel_protect_sheet_headless(
+    file_path: str,
+    password: str = "",
+    sheet_name: Optional[str] = None,
+    output_path: Optional[str] = None
+) -> str:
+    """Enable password protection on a worksheet headlessly.
+    Args:
+        file_path: Path to the .xlsx file.
+        password: Optional protection password.
+        sheet_name: Optional specific worksheet name.
+        output_path: Optional destination path (overwrites input if not provided).
+    """
+    return ExcelEngine.protect_sheet_headless(
+        file_path=file_path,
+        password=password,
+        sheet_name=sheet_name,
+        output_path=output_path
+    )
+
+
+@mcp.tool()
+def excel_delete_sheet_headless(
+    file_path: str,
+    sheet_name: str,
+    output_path: Optional[str] = None
+) -> str:
+    """Delete a worksheet from a workbook headlessly.
+    Args:
+        file_path: Path to the .xlsx file.
+        sheet_name: Sheet to delete.
+        output_path: Optional destination path (overwrites input if not provided).
+    """
+    return ExcelEngine.delete_sheet_headless(
+        file_path=file_path,
+        sheet_name=sheet_name,
+        output_path=output_path
+    )
+
+
+@mcp.tool()
+def excel_set_sheet_color_headless(
+    file_path: str,
+    sheet_name: str,
+    hex_color: str,
+    output_path: Optional[str] = None
+) -> str:
+    """Set worksheet tab color headlessly.
+    Args:
+        file_path: Path to the .xlsx file.
+        sheet_name: Sheet to colorize.
+        hex_color: Hex color string (e.g. '#2563EB' or '2563EB').
+        output_path: Optional destination path (overwrites input if not provided).
+    """
+    return ExcelEngine.set_sheet_color_headless(
+        file_path=file_path,
+        sheet_name=sheet_name,
+        hex_color=hex_color,
+        output_path=output_path
+    )
+
+
 def main():
     """Run the FastMCP server."""
     mcp.run()
@@ -2144,4 +2487,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 

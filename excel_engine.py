@@ -381,3 +381,60 @@ class ExcelEngine:
         wb.save(dest)
         return dest
 
+    @staticmethod
+    def copy_sheet_headless(file_path: str, source_sheet: str, new_sheet_name: str, output_path: Optional[str] = None) -> str:
+        """Duplicate a worksheet with all its data, styling, and formulas headlessly."""
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        if source_sheet not in wb.sheetnames:
+            raise ValueError(f"Sheet '{source_sheet}' not found in workbook.")
+        src = wb[source_sheet]
+        target = wb.copy_worksheet(src)
+        target.title = new_sheet_name
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return dest
+
+    @staticmethod
+    def protect_sheet_headless(file_path: str, password: str = "", sheet_name: Optional[str] = None, output_path: Optional[str] = None) -> str:
+        """Enable password protection on a worksheet headlessly."""
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+        if password:
+            ws.protection.set_password(password)
+        ws.protection.enable()
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return dest
+
+    @staticmethod
+    def delete_sheet_headless(file_path: str, sheet_name: str, output_path: Optional[str] = None) -> str:
+        """Delete a worksheet from a workbook headlessly."""
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        if sheet_name not in wb.sheetnames:
+            raise ValueError(f"Sheet '{sheet_name}' not found in workbook.")
+        del wb[sheet_name]
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return dest
+
+    @staticmethod
+    def set_sheet_color_headless(file_path: str, sheet_name: str, hex_color: str, output_path: Optional[str] = None) -> str:
+        """Set worksheet tab color headlessly."""
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        if sheet_name not in wb.sheetnames:
+            raise ValueError(f"Sheet '{sheet_name}' not found in workbook.")
+        ws = wb[sheet_name]
+        ws.sheet_properties.tabColor = hex_color.lstrip("#")
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return dest
+
+

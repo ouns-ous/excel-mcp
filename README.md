@@ -16,7 +16,7 @@ A comprehensive **Model Context Protocol (MCP)** server for Windows enabling AI 
 
 ---
 
-## 🛠️ Complete List of Tools (152 Tools)
+## 🛠️ Complete List of Tools (174 Tools)
 
 ### 1. Workbook & Window Management
 - `excel_status()`: Get current running state, open workbooks count, active sheet, active cell, and used range.
@@ -203,8 +203,28 @@ A comprehensive **Model Context Protocol (MCP)** server for Windows enabling AI 
 - `excel_clear_cell_contents(range_address)`: Clear values and formulas while keeping formatting intact.
 - `excel_clear_cell_formats(range_address)`: Clear styling while keeping values and formulas intact.
 - `excel_export_sheet_to_csv(output_path)`: Direct COM export of active sheet to CSV.
+- `excel_get_precedents(cell_address)`: Return addresses of cells referenced by this formula.
+- `excel_get_dependents(cell_address)`: Return addresses of cells dependent on this cell.
 
-### 25. Headless OOXML Engine (openpyxl)
+### 25. Filter Controls, Alignment & Form Security
+- `excel_clear_sheet_filters()`: Clear active filter selections without removing filter dropdown arrows.
+- `excel_apply_autofilter_column(range_address, field_index, criteria)`: Apply filter criteria on a specific column.
+- `excel_remove_autofilter()`: Remove AutoFilter mode and dropdowns completely.
+- `excel_wrap_text(range_address, wrap)`: Toggle text wrapping on a range.
+- `excel_shrink_to_fit(range_address, shrink)`: Toggle Shrink-to-Fit on cells.
+- `excel_set_cell_orientation(range_address, degrees)`: Set text rotation orientation angle (-90 to +90).
+- `excel_flash_fill_column(range_address)`: Trigger Excel Flash Fill down a column.
+- `excel_set_chart_title(chart_name, title, font_size, bold)`: Directly format chart title.
+- `excel_set_chart_legend(chart_name, position, show_legend)`: Place legend (top, bottom, left, right, corner).
+- `excel_set_chart_axes_titles(chart_name, x_title, y_title)`: Set horizontal and vertical axis title labels.
+- `excel_set_chart_style(chart_name, style_id)`: Apply built-in modern visual chart themes.
+- `excel_lock_cells(range_address, locked)`: Lock or unlock cells for form templates.
+- `excel_hide_formulas(range_address, hidden)`: Hide formulas from formula bar in protected sheets.
+- `excel_is_sheet_protected()`: Query worksheet protection status.
+- `excel_set_row_visibility(row_index, hidden)`: Hide or unhide specific rows.
+- `excel_set_column_visibility(column, hidden)`: Hide or unhide specific columns.
+
+### 26. Headless OOXML Engine (openpyxl)
 - `excel_create_from_markdown(markdown_table, output_path, sheet_name)`: Convert Markdown table to styled `.xlsx`.
 - `excel_read_to_markdown(file_path, sheet_name)`: Read `.xlsx` table into clean Markdown.
 - `excel_json_to_sheet(json_data, output_path, sheet_name)`: Export JSON records to styled `.xlsx`.
@@ -219,6 +239,10 @@ A comprehensive **Model Context Protocol (MCP)** server for Windows enabling AI 
 - `excel_compare_two_workbooks(file_path_1, file_path_2)`: Compare two `.xlsx` files and return structural and cell differences.
 - `excel_extract_hyperlinks(file_path)`: Extract all embedded hyperlinks and URLs headlessly.
 - `excel_unhide_all_sheets_headless(file_path, output_path)`: Unhide all hidden and very hidden worksheets headlessly.
+- `excel_copy_sheet_headless(file_path, source_sheet, new_sheet_name)`: Clone worksheet headlessly.
+- `excel_protect_sheet_headless(file_path, password, sheet_name)`: Password protect sheet headlessly.
+- `excel_delete_sheet_headless(file_path, sheet_name)`: Remove worksheet headlessly.
+- `excel_set_sheet_color_headless(file_path, sheet_name, hex_color)`: Colorize worksheet tab headlessly.
 
 ---
 
@@ -262,5 +286,9 @@ uv run python test_power_tools.py
 
 # Ultra Tools: Workbook Comparison, Hyperlinks, Sheet Unhiding
 uv run python test_ultra_tools.py
+
+# Mega Tools: Sheet Cloning, Tab Color, Sheet Protection, Deletion
+uv run python test_mega_tools.py
 ```
+
 

@@ -2383,6 +2383,201 @@ class ExcelController:
         ps.FitToPagesTall = fit_to_tall
         return {"status": "success", "fit_to_wide": fit_to_wide, "fit_to_tall": fit_to_tall}
 
+    # ── ADVANCED AUTOFILTER MANAGEMENT ────────────────────────────────────────
+
+    def clear_sheet_filters(self, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Clear active filter selections on the worksheet without removing filter dropdown arrows."""
+        sheet = self.get_sheet(sheet_name)
+        if sheet.FilterMode:
+            sheet.ShowAllData()
+            return {"status": "success", "message": "Filter selections cleared."}
+        return {"status": "noop", "message": "No active filters were applied."}
+
+    def apply_autofilter_column(
+        self,
+        range_address: str,
+        field_index: int = 1,
+        criteria: str = "",
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Apply a filter criteria to a specific column within an AutoFilter range."""
+        sheet = self.get_sheet(sheet_name)
+        rng = sheet.Range(range_address)
+        rng.AutoFilter(Field=field_index, Criteria1=criteria)
+        return {"status": "success", "range": range_address, "field": field_index, "criteria": criteria}
+
+    def remove_autofilter(self, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Remove AutoFilter mode and dropdown arrows completely from the worksheet."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.AutoFilterMode = False
+        return {"status": "success", "message": "AutoFilter mode removed."}
+
+    # ── ADVANCED ALIGNMENT & TEXT FITTING ──────────────────────────────────────
+
+    def wrap_text(self, range_address: str, wrap: bool = True, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Enable or disable text wrapping on a range of cells."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Range(range_address).WrapText = wrap
+        return {"status": "success", "range": range_address, "wrap_text": wrap}
+
+    def shrink_to_fit(self, range_address: str, shrink: bool = True, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Enable or disable Shrink-to-Fit on cells to automatically fit text within column width."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Range(range_address).ShrinkToFit = shrink
+        return {"status": "success", "range": range_address, "shrink_to_fit": shrink}
+
+    def set_cell_orientation(self, range_address: str, degrees: int = 0, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Set text rotation orientation angle in degrees (-90 to +90, or -4166 for upward)."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Range(range_address).Orientation = degrees
+        return {"status": "success", "range": range_address, "degrees": degrees}
+
+    def flash_fill_column(self, range_address: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Trigger Excel's intelligent Flash Fill down a column based on pattern examples."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Range(range_address).FlashFill()
+        return {"status": "success", "range": range_address, "message": "Flash fill executed."}
+
+    # ── ADVANCED CHART ELEMENTS & STYLING ─────────────────────────────────────
+
+    def set_chart_title(
+        self,
+        chart_name: str,
+        title: str,
+        font_size: float = 14.0,
+        bold: bool = True,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Configure chart title text, font size, and bold formatting directly."""
+        sheet = self.get_sheet(sheet_name)
+        chart = sheet.ChartObjects(chart_name).Chart
+        chart.HasTitle = True
+        chart.ChartTitle.Text = title
+        chart.ChartTitle.Font.Size = font_size
+        chart.ChartTitle.Font.Bold = bold
+        return {"status": "success", "chart": chart_name, "title": title}
+
+    def set_chart_legend(
+        self,
+        chart_name: str,
+        position: str = "right",
+        show_legend: bool = True,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Configure chart legend visibility and placement ('top', 'bottom', 'left', 'right', 'corner')."""
+        sheet = self.get_sheet(sheet_name)
+        chart = sheet.ChartObjects(chart_name).Chart
+        chart.HasLegend = show_legend
+        if show_legend:
+            pos_map = {
+                "bottom": -4107,
+                "top": -4160,
+                "left": -4131,
+                "right": -4152,
+                "corner": 2
+            }
+            chart.Legend.Position = pos_map.get(position.lower(), -4152)
+        return {"status": "success", "chart": chart_name, "show_legend": show_legend, "position": position}
+
+    def set_chart_axes_titles(
+        self,
+        chart_name: str,
+        x_title: Optional[str] = None,
+        y_title: Optional[str] = None,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Set horizontal category (X) and vertical value (Y) axis title labels on a chart."""
+        sheet = self.get_sheet(sheet_name)
+        chart = sheet.ChartObjects(chart_name).Chart
+        if x_title:
+            ax_x = chart.Axes(1, 1)  # xlCategory, xlPrimary
+            ax_x.HasTitle = True
+            ax_x.AxisTitle.Text = x_title
+        if y_title:
+            ax_y = chart.Axes(2, 1)  # xlValue, xlPrimary
+            ax_y.HasTitle = True
+            ax_y.AxisTitle.Text = y_title
+        return {"status": "success", "chart": chart_name, "x_title": x_title, "y_title": y_title}
+
+    def set_chart_style(self, chart_name: str, style_id: int = 201, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Apply a built-in modern visual chart style preset by ID (e.g. 201, 202, 215)."""
+        sheet = self.get_sheet(sheet_name)
+        chart = sheet.ChartObjects(chart_name).Chart
+        chart.ChartStyle = style_id
+        return {"status": "success", "chart": chart_name, "style_id": style_id}
+
+    # ── SECURITY & FORM CELL LOCKING ──────────────────────────────────────────
+
+    def lock_cells(self, range_address: str, locked: bool = True, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Lock or unlock cells. Unlocked cells can still be edited when worksheet protection is active."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Range(range_address).Locked = locked
+        return {"status": "success", "range": range_address, "locked": locked}
+
+    def hide_formulas(self, range_address: str, hidden: bool = True, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Hide formulas in the formula bar for cells when worksheet protection is active."""
+        sheet = self.get_sheet(sheet_name)
+        sheet.Range(range_address).FormulaHidden = hidden
+        return {"status": "success", "range": range_address, "formula_hidden": hidden}
+
+    def is_sheet_protected(self, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Query worksheet protection status (contents, objects, scenarios)."""
+        sheet = self.get_sheet(sheet_name)
+        return {
+            "sheet": sheet.Name,
+            "protect_contents": bool(sheet.ProtectContents),
+            "protect_drawing_objects": bool(sheet.ProtectDrawingObjects),
+            "protect_scenarios": bool(sheet.ProtectScenarios)
+        }
+
+    # ── FORMULA AUDITING & PRECEDENTS/DEPENDENTS ──────────────────────────────
+
+    def get_precedents(self, cell_address: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Return the range addresses of all cells directly referenced by the formula in this cell."""
+        sheet = self.get_sheet(sheet_name)
+        cell = sheet.Range(cell_address)
+        try:
+            prec = cell.Precedents
+            return {"cell": cell.Address, "precedents": prec.Address}
+        except Exception:
+            return {"cell": cell.Address, "precedents": None}
+
+    def get_dependents(self, cell_address: str, sheet_name: Optional[str] = None) -> Dict[str, Any]:
+        """Return the range addresses of all cells that depend on the value in this cell."""
+        sheet = self.get_sheet(sheet_name)
+        cell = sheet.Range(cell_address)
+        try:
+            dep = cell.Dependents
+            return {"cell": cell.Address, "dependents": dep.Address}
+        except Exception:
+            return {"cell": cell.Address, "dependents": None}
+
+    # ── ROW & COLUMN VISIBILITY ───────────────────────────────────────────────
+
+    def set_row_visibility(
+        self,
+        row_index: Union[int, str],
+        hidden: bool = True,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Hide or unhide specific rows (e.g. row_index=5 or '5:10')."""
+        sheet = self.get_sheet(sheet_name)
+        row_ref = str(row_index) if ":" in str(row_index) else f"{row_index}:{row_index}"
+        sheet.Rows(row_ref).Hidden = hidden
+        return {"status": "success", "rows": row_ref, "hidden": hidden}
+
+    def set_column_visibility(
+        self,
+        column: Union[int, str],
+        hidden: bool = True,
+        sheet_name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Hide or unhide specific columns (e.g. column='C' or 'C:E')."""
+        sheet = self.get_sheet(sheet_name)
+        col_ref = str(column) if ":" in str(column) else f"{column}:{column}"
+        sheet.Columns(col_ref).Hidden = hidden
+        return {"status": "success", "columns": col_ref, "hidden": hidden}
+
 
 # Singleton instance
 controller = ExcelController()
