@@ -16,7 +16,7 @@ A comprehensive **Model Context Protocol (MCP)** server for Windows enabling AI 
 
 ---
 
-## 🛠️ Complete List of Tools (223 Tools)
+## 🛠️ Complete List of Tools (243 Tools)
 
 ### 1. Workbook & Window Management
 - `excel_status()`: Get current running state, open workbooks count, active sheet, active cell, and used range.
@@ -354,6 +354,15 @@ uv run python test_giga_tools.py
 
 # Tera Tools: Headless Gridlines, Zoom, Auto-fit Columns, and Freeze Panes
 uv run python test_tera_tools.py
+
+# Data Quality & Text Intelligence Tools: Clean Whitespace, Regex Replace, Fuzzy Deduplication, Masking
+uv run python test_data_quality_tools.py
+
+# Financial & Statistical Tools: Amortization, CAGR, Depreciation, Correlation, Summary Stats, Break-Even, Waterfall
+uv run python test_financial_tools.py
+
+# Governance & Schema Tools: Audit Logs, Batch CSV Export, Split/Merge Workbooks, Schema Validation, Data Dictionary
+uv run python test_governance_tools.py
 ```
 
 

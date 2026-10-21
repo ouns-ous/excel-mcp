@@ -1,11 +1,11 @@
 ---
 name: excel-master
-description: "Expert guidance, decision trees, and best practices for automating Microsoft Excel (.xlsx) using the Excel MCP Server (223 Tools). Triggers: creating spreadsheets, financial models, executive KPI dashboards, charts, pivot tables, slicers, what-if sensitivity analysis, data cleaning, formula auditing, PDF export, and fast headless OOXML operations."
+description: "Expert guidance, decision trees, and best practices for automating Microsoft Excel (.xlsx) using the Excel MCP Server (243 Tools). Triggers: creating spreadsheets, financial models, executive KPI dashboards, charts, pivot tables, slicers, what-if sensitivity analysis, data cleaning, formula auditing, PDF export, data governance, and fast headless OOXML operations."
 ---
 
 # Microsoft Excel Automation & Data Engineering (Excel MCP)
 
-This skill equips AI assistants (Antigravity, Claude Desktop, Cursor, etc.) with a clear blueprint on **WHEN**, **WHERE**, and **HOW** to orchestrate the **223 tools** of the `excel-mcp` server.
+This skill equips AI assistants (Antigravity, Claude Desktop, Cursor, etc.) with a clear blueprint on **WHEN**, **WHERE**, and **HOW** to orchestrate the **243 tools** of the `excel-mcp` server.
 
 ---
 
@@ -15,7 +15,7 @@ This skill equips AI assistants (Antigravity, Claude Desktop, Cursor, etc.) with
 | :--- | :--- | :--- |
 | **Tool Prefix** | `excel_*` (interactive COM calls) | `excel_*_headless`, `excel_create_from_markdown`, `excel_compare_two_workbooks`, etc. |
 | **Execution** | Real-time desktop GUI (`win32com.client`) | In-memory OOXML stream processing |
-| **When to Use** | When the user wants real-time visual feedback, interactive dashboards, Pivot Tables, Slicers, Goal Seek, native PDF export, or live formula evaluation. | When speed is critical, background batch processing without Excel GUI, comparing two files, or transforming Markdown/JSON/CSV into spreadsheets. |
+| **When to Use** | When the user wants real-time visual feedback, interactive dashboards, Pivot Tables, Slicers, Goal Seek, native PDF export, or live formula evaluation. | When speed is critical, background batch processing without Excel GUI, comparing two files, transforming Markdown/JSON/CSV, data governance, or server environments. |
 | **Prerequisites** | Microsoft Excel installed on Windows | None (works standalone in Python) |
 
 ---
@@ -58,65 +58,67 @@ This skill equips AI assistants (Antigravity, Claude Desktop, Cursor, etc.) with
 - **Change Calculation**: `excel_change_pivot_field_calculation(pivot_name="PivotTable1", data_field_name="Sum of Sales", calculation="average")`.
 - **Switch Pivot Layout**: `excel_set_pivot_layout(pivot_name="PivotTable1", layout="tabular")`.
 
-### 6. What-If Financial & Sensitivity Analysis
-- **Goal Seek**: `excel_goal_seek(target_cell="C15", target_value=100000.0, changing_cell="C5")` -> finds the exact unit price needed to hit \$100k profit.
-- **2-Variable Sensitivity Matrix**: `excel_create_two_variable_data_table(table_range="B20:G25", row_input_cell="C5", col_input_cell="C6")`.
-- **Scenario Management**:
-  - `excel_add_scenario(name="Best Case", changing_cells="C5:C7", values=[150, 2000, 0.05])`.
-  - `excel_show_scenario(name="Best Case")`.
+### 6. Data Cleaning & Text Intelligence (Headless)
+- **Trim & Clean Control Chars**: `excel_clean_whitespace_headless(file_path="data.xlsx", range_address="A2:E500")` -> cleans spaces & invisible control chars.
+- **Batch Case Conversion**: `excel_case_transform_headless(file_path="data.xlsx", range_address="A2:A500", mode="upper"|"lower"|"title"|"capitalize")`.
+- **Regex Find & Replace**: `excel_regex_replace_headless(file_path="data.xlsx", range_address="C2:C500", pattern=r"INV-(\\d+)", replacement=r"REF-\\1")`.
+- **Extract Text Patterns**: `excel_extract_by_pattern_headless(file_path="data.xlsx", source_col="D", target_col="E", pattern=r"([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+)")`.
+- **Fuzzy Deduplication**: `excel_fuzzy_deduplicate_headless(file_path="data.xlsx", key_column="A", threshold=0.85, action="flag"|"remove")`.
+- **Data Privacy & Redaction**: `excel_mask_sensitive_data_headless(file_path="data.xlsx", range_address="B2:B500", mask_type="email"|"credit_card"|"phone"|"custom")`.
+- **Detect Data Types & Schema**: `excel_detect_column_types_headless(file_path="data.xlsx")` -> infers column types, null counts, and samples.
 
-### 7. Sheet Polishing & Layout Aesthetics
-- **Clean Dashboard Look**: `excel_toggle_gridlines(show=False)` (gives a clean, modern SaaS software feel).
-- **Freeze Panes**: `excel_freeze_top_row()` or `excel_freeze_custom_panes(row=9, column=2)`.
-- **Color Tabs**: `excel_set_tab_color(hex_color="#10B981")`.
-- **Process Flows**: `excel_add_flowchart_process_block(...)` & `excel_add_connector_arrow(...)`.
+### 7. Financial Modeling & Statistical Analysis (Headless)
+- **Loan Amortization**: `excel_add_amortization_schedule_headless(file_path="loan.xlsx", principal=250000, annual_interest_rate=0.065, term_years=15)`.
+- **CAGR Growth Analysis**: `excel_add_cagr_analysis_headless(file_path="model.xlsx", start_value=1200000, end_value=4800000, periods=4, output_cell="G2")`.
+- **Multi-Year Depreciation**: `excel_add_depreciation_schedule_headless(file_path="capex.xlsx", asset_cost=80000, salvage_value=8000, useful_life_years=5, method="straight_line"|"declining_balance")`.
+- **Correlation Matrix**: `excel_generate_correlation_matrix_headless(file_path="analytics.xlsx", columns=["B", "C", "D"], output_cell="F2")`.
+- **Descriptive Statistics**: `excel_add_summary_statistics_headless(file_path="data.xlsx", column="C", output_cell="E2")`.
+- **Break-Even Analysis**: `excel_calculate_break_even_headless(file_path="pricing.xlsx", fixed_costs=75000, variable_cost_per_unit=28.5, price_per_unit=65.0)`.
+- **Waterfall Breakdown**: `excel_add_waterfall_breakdown_headless(file_path="arr.xlsx", categories=[...], amounts=[...], output_cell="B2")`.
 
-### 8. Auditing & Troubleshooting
-- **Find Formula Errors**: `excel_get_formula_errors()` -> returns all `#DIV/0!`, `#N/A`, `#VALUE!`.
-- **Inspect Precedents/Dependents**: `excel_get_precedents(cell_address="D15")` and `excel_get_dependents(cell_address="C5")`.
-- **Trace Arrows**: `excel_trace_precedents(range_address="D15")`.
-- **List Merged Areas**: `excel_get_merged_ranges()`.
+### 8. Governance, Schemas & Multi-Workbook Management
+- **Audit Trail Logging**: `excel_append_audit_log_headless(file_path="financials.xlsx", event_message="Model parameters revised", user_name="Analyst")`.
+- **Batch Export to CSV**: `excel_batch_export_sheets_to_csv_headless(file_path="report.xlsx", output_dir="csv_dump/")`.
+- **Merge Workbooks**: `excel_merge_multiple_workbooks_headless(file_paths=["q1.xlsx", "q2.xlsx"], output_path="master.xlsx", combine_mode="sheets"|"rows")`.
+- **Partition & Split**: `excel_split_workbook_by_column_headless(file_path="global_sales.xlsx", split_column="A", output_dir="by_region/")`.
+- **Schema Validation**: `excel_validate_schema_headless(file_path="import.xlsx", expected_columns=["ID", "Email", "Amount"], required_types={"Amount": "number"})`.
+- **Markdown Data Dictionary**: `excel_generate_markdown_data_dictionary_headless(file_path="data.xlsx")`.
 
-### 9. Printing & PDF Export
-- **Print Titles (Repeat Header Rows)**: `excel_set_repeat_rows_cols(repeat_rows="1:8")`.
-- **Margins & Page Fit**: `excel_set_sheet_margins(top_inches=0.5, bottom_inches=0.5)` and `excel_set_sheet_fit_to_pages(fit_to_wide=1, fit_to_tall=1)`.
-- **Export to PDF**: `excel_export_pdf(output_path="C:\\Reports\\Report.pdf", sheet_only=True)`.
-
----
-
-## 🎨 Enterprise Design System for Spreadsheets
-
-Follow these rules for stunning, professional outputs:
-
-1. **Header Row Styling**:
-   - Dark Navy (`#1E293B`) or Slate Blue (`#1F4E79`).
-   - Pure White text (`#FFFFFF`), Bold (`Font.Bold = True`).
-   - Centered alignment with vertical centering.
-2. **Data Rows**:
-   - Alternating Zebra rows: `#FFFFFF` and `#F8FAFC`.
-   - Text left-aligned; numbers and currency right-aligned; status badges centered.
-3. **Accent Colors**:
-   - Primary: `#2563EB` (Royal Blue)
-   - Success / Positive: `#10B981` (Emerald)
-   - Warning: `#F59E0B` (Amber)
-   - Danger: `#EF4444` (Rose / Red)
-4. **Number Formatting Standards**:
-   - Currency: `"$#,##0.00"` or `"$#,##0"` (integers).
-   - Percentages: `"0.0%"` or `"0%"`.
-   - Dates: `"YYYY-MM-DD"`.
-   - Accounting: `_($* #,##0.00_);_($* (#,##0.00);_($* "-"??_);_(@_)`.
+### 9. What-If Analysis, Auditing & Export
+- **Goal Seek**: `excel_goal_seek(target_cell="C9", target_value=1000000, changing_cell="C3")`.
+- **2-Variable Sensitivity Table**: `excel_create_two_variable_data_table(table_range="E2:J7", row_input_cell="C4", col_input_cell="C3")`.
+- **Trace Precedents / Dependents**: `excel_trace_precedents(cell="C9")` or `excel_trace_dependents(cell="C3")`.
+- **Export PDF (Auto-Fit)**: `excel_set_sheet_fit_to_pages(fit_to_wide=1, fit_to_tall=1)` then `excel_export_pdf(output_path="report.pdf")`.
 
 ---
 
-## 🚀 End-to-End Workflow Examples
+## 🎨 Enterprise Design System: Excel Standards
 
-### Workflow 1: Executive KPI Dashboard with Chart & PDF
+When generating spreadsheets, apply the following enterprise standards:
+
+### 1. Palette & Hierarchy
+- **Header Fill**: Dark Navy `#1F4E79` or Slate `#1E293B` with bold white text `#FFFFFF`.
+- **KPI Accent**: Royal Blue `#2563EB`, Emerald `#10B981`, Purple `#7C3AED`, or Amber `#D97706`.
+- **Zebra Striping**: Even rows `#F8FAFC` (very light slate), Odd rows `#FFFFFF`.
+- **Total Rows**: Top thin border `#94A3B8`, bottom double border `#1E293B`, bold font.
+
+### 2. Number Formatting
+- **Currency**: `"$#,##0"` (integers) or `"$#,##0.00"` (exact decimals).
+- **Percentages**: `"0.0%"` or `"0.00%"`.
+- **Dates**: `"YYYY-MM-DD"`.
+- **Integers**: `#,##0`.
+
+---
+
+## ⚡ End-to-End Orchestration Workflows
+
+### Workflow 1: Executive KPI Dashboard (Live Desktop COM)
 ```python
-# 1. Create a clean workbook
+# 1. Initialize Workbook
 excel_new_workbook(sheet_name="Executive Dashboard")
-excel_toggle_gridlines(show=False)
+excel_set_view(show_gridlines=True)
 
-# 2. Add Title & KPI Cards
+# 2. Write Title & KPI Summary Cards
 excel_write_cell(cell="B2", value="EXECUTIVE REVENUE OVERVIEW")
 excel_format_range(range_address="B2", font_size=18, bold=True, font_color="#1E293B")
 
@@ -154,7 +156,7 @@ excel_set_sheet_fit_to_pages(fit_to_wide=1, fit_to_tall=1)
 excel_export_pdf(output_path="C:\\Reports\\Executive_Dashboard.pdf")
 ```
 
-### Workflow 2: Financial Sensitivity Analysis (Goal Seek & Data Table)
+### Workflow 2: Financial Sensitivity & Break-Even Modeling
 ```python
 # 1. Setup Base Financial Model
 excel_write_range(start_cell="B2", data=[
@@ -173,8 +175,6 @@ excel_format_table_headers(range_address="B2:C2")
 res = excel_goal_seek(target_cell="C9", target_value=250000.0, changing_cell="C3")
 
 # 3. Create 2-Variable Sensitivity Matrix (Price vs Volume)
-# Setup top row volumes: 8000, 9000, 10000, 11000, 12000
-# Setup left column prices: 40, 45, 50, 55, 60
 excel_create_two_variable_data_table(
     table_range="E2:J7",
     row_input_cell="C4", # Volume varies across columns
@@ -182,15 +182,28 @@ excel_create_two_variable_data_table(
 )
 ```
 
-### Workflow 3: Fast Headless Batch Operations
+### Workflow 3: Fast Headless Data Quality & Governance Pipeline
 ```python
-# 1. Convert Markdown report into Excel without GUI
-excel_create_from_markdown(markdown_table=md_str, output_path="output/sales.xlsx")
+# 1. Clean dirty data and remove invisible control characters
+excel_clean_whitespace_headless(file_path="input_raw.xlsx", range_address="A2:H1000")
 
-# 2. Audit workbook structure headlessly
-audit = excel_audit_workbook(file_path="output/sales.xlsx")
+# 2. Deduplicate approximately spelled customer names
+excel_fuzzy_deduplicate_headless(file_path="input_raw.xlsx", key_column="B", threshold=0.85, action="flag")
 
-# 3. Compare two versions of a financial model
-diffs = excel_compare_two_workbooks("v1.xlsx", "v2.xlsx")
-# diffs['cell_differences'] highlights all altered assumptions!
+# 3. Mask PII/sensitive emails for compliance
+excel_mask_sensitive_data_headless(file_path="input_raw.xlsx", range_address="D2:D1000", mask_type="email")
+
+# 4. Validate schema compliance
+schema_report = excel_validate_schema_headless(
+    file_path="input_raw.xlsx",
+    expected_columns=["ID", "Customer", "Email", "Revenue"],
+    required_types={"Revenue": "number"}
+)
+
+# 5. Append audit log entry
+excel_append_audit_log_headless(
+    file_path="input_raw.xlsx",
+    event_message="Data cleaning, deduplication, and PII masking pipeline executed.",
+    user_name="DataOps_Agent"
+)
 ```
