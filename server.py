@@ -3242,6 +3242,142 @@ def excel_freeze_panes_headless(
     )
 
 
+
+
+@mcp.tool()
+def excel_clean_whitespace_headless(
+    file_path: str,
+    range_address: Optional[str] = None,
+    sheet_name: Optional[str] = None,
+    output_path: Optional[str] = None
+) -> str:
+    """Strip leading/trailing whitespace, collapse internal multiple spaces, and remove control characters from cells headlessly."""
+    return ExcelEngine.clean_whitespace_headless(
+        file_path=file_path,
+        range_address=range_address,
+        sheet_name=sheet_name,
+        output_path=output_path
+    )
+
+
+@mcp.tool()
+def excel_case_transform_headless(
+    file_path: str,
+    range_address: str,
+    mode: str = "upper",
+    sheet_name: Optional[str] = None,
+    output_path: Optional[str] = None
+) -> str:
+    """Transform text case (upper, lower, title, capitalize) across a range headlessly."""
+    return ExcelEngine.case_transform_headless(
+        file_path=file_path,
+        range_address=range_address,
+        mode=mode,
+        sheet_name=sheet_name,
+        output_path=output_path
+    )
+
+
+@mcp.tool()
+def excel_regex_replace_headless(
+    file_path: str,
+    range_address: str,
+    pattern: str,
+    replacement: str,
+    sheet_name: Optional[str] = None,
+    output_path: Optional[str] = None
+) -> str:
+    """Find and replace text using regular expressions across a cell range headlessly."""
+    return ExcelEngine.regex_replace_headless(
+        file_path=file_path,
+        range_address=range_address,
+        pattern=pattern,
+        replacement=replacement,
+        sheet_name=sheet_name,
+        output_path=output_path
+    )
+
+
+@mcp.tool()
+def excel_extract_by_pattern_headless(
+    file_path: str,
+    source_col: str,
+    target_col: str,
+    pattern: str,
+    start_row: int = 2,
+    sheet_name: Optional[str] = None,
+    output_path: Optional[str] = None
+) -> str:
+    """Extract matching regex patterns (or group 1) from source column into target column headlessly."""
+    return ExcelEngine.extract_by_pattern_headless(
+        file_path=file_path,
+        source_col=source_col,
+        target_col=target_col,
+        pattern=pattern,
+        start_row=start_row,
+        sheet_name=sheet_name,
+        output_path=output_path
+    )
+
+
+@mcp.tool()
+def excel_fuzzy_deduplicate_headless(
+    file_path: str,
+    key_column: str = "A",
+    threshold: float = 0.85,
+    action: str = "flag",
+    start_row: int = 2,
+    sheet_name: Optional[str] = None,
+    output_path: Optional[str] = None
+) -> dict:
+    """Detect approximate duplicate rows based on string similarity in a key column headlessly."""
+    return ExcelEngine.fuzzy_deduplicate_headless(
+        file_path=file_path,
+        key_column=key_column,
+        threshold=threshold,
+        action=action,
+        start_row=start_row,
+        sheet_name=sheet_name,
+        output_path=output_path
+    )
+
+
+@mcp.tool()
+def excel_mask_sensitive_data_headless(
+    file_path: str,
+    range_address: str,
+    mask_type: str = "email",
+    mask_char: str = "*",
+    visible_chars: int = 4,
+    sheet_name: Optional[str] = None,
+    output_path: Optional[str] = None
+) -> str:
+    """Mask sensitive data like emails, credit cards, or phone numbers in a cell range headlessly."""
+    return ExcelEngine.mask_sensitive_data_headless(
+        file_path=file_path,
+        range_address=range_address,
+        mask_type=mask_type,
+        mask_char=mask_char,
+        visible_chars=visible_chars,
+        sheet_name=sheet_name,
+        output_path=output_path
+    )
+
+
+@mcp.tool()
+def excel_detect_column_types_headless(
+    file_path: str,
+    sheet_name: Optional[str] = None,
+    sample_rows: int = 100
+) -> dict:
+    """Infer semantic data types (integer, float, date, boolean, email, text) across columns headlessly."""
+    return ExcelEngine.detect_column_types_headless(
+        file_path=file_path,
+        sheet_name=sheet_name,
+        sample_rows=sample_rows
+    )
+
+
 def main():
     """Run the FastMCP server."""
     mcp.run()

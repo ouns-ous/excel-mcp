@@ -612,6 +612,296 @@ class ExcelEngine:
         wb.save(dest)
         return dest
 
+    @staticmethod
+    def clean_whitespace_headless(
+        file_path: str,
+        range_address: Optional[str] = None,
+        sheet_name: Optional[str] = None,
+        output_path: Optional[str] = None
+    ) -> str:
+        """Strip leading/trailing whitespace, collapse internal multiple spaces, and remove control characters from cells."""
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+        
+        cells_to_process = ws[range_address] if range_address else ws.iter_rows()
+        if range_address and not isinstance(cells_to_process, tuple):
+            cells_to_process = ((cells_to_process,),)
+            
+        for row in cells_to_process:
+            for cell in (row if isinstance(row, (tuple, list)) else (row,)):
+                if isinstance(cell.value, str):
+                    cleaned = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', cell.value)
+                    cleaned = re.sub(r'[ \t]+', ' ', cleaned).strip()
+                    cell.value = cleaned
+                    
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return dest
 
+    @staticmethod
+    def case_transform_headless(
+        file_path: str,
+        range_address: str,
+        mode: str = "upper",
+        sheet_name: Optional[str] = None,
+        output_path: Optional[str] = None
+    ) -> str:
+        """Transform text case (upper, lower, title, capitalize) across a range headlessly."""
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+        
+        cells_to_process = ws[range_address]
+        if not isinstance(cells_to_process, tuple):
+            cells_to_process = ((cells_to_process,),)
+            
+        m = mode.lower().strip()
+        for row in cells_to_process:
+            for cell in (row if isinstance(row, (tuple, list)) else (row,)):
+                if isinstance(cell.value, str):
+                    if m == "upper":
+                        cell.value = cell.value.upper()
+                    elif m == "lower":
+                        cell.value = cell.value.lower()
+                    elif m == "title":
+                        cell.value = cell.value.title()
+                    elif m == "capitalize":
+                        cell.value = cell.value.capitalize()
+                        
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return dest
 
+    @staticmethod
+    def regex_replace_headless(
+        file_path: str,
+        range_address: str,
+        pattern: str,
+        replacement: str,
+        sheet_name: Optional[str] = None,
+        output_path: Optional[str] = None
+    ) -> str:
+        """Find and replace text using regular expressions across a cell range headlessly."""
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+        
+        compiled_regex = re.compile(pattern)
+        cells_to_process = ws[range_address]
+        if not isinstance(cells_to_process, tuple):
+            cells_to_process = ((cells_to_process,),)
+            
+        for row in cells_to_process:
+            for cell in (row if isinstance(row, (tuple, list)) else (row,)):
+                if isinstance(cell.value, str):
+                    cell.value = compiled_regex.sub(replacement, cell.value)
+                    
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return dest
+
+    @staticmethod
+    def extract_by_pattern_headless(
+        file_path: str,
+        source_col: str,
+        target_col: str,
+        pattern: str,
+        start_row: int = 2,
+        sheet_name: Optional[str] = None,
+        output_path: Optional[str] = None
+    ) -> str:
+        """Extract matching regex patterns (or group 1) from source column into target column."""
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+        
+        compiled_regex = re.compile(pattern)
+        max_r = ws.max_row
+        for r in range(start_row, max_r + 1):
+            s_val = ws[f"{source_col}{r}"].value
+            if s_val is not None:
+                match = compiled_regex.search(str(s_val))
+                if match:
+                    extracted = match.group(1) if match.groups() else match.group(0)
+                    ws[f"{target_col}{r}"].value = extracted
+                else:
+                    ws[f"{target_col}{r}"].value = None
+                    
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return dest
+
+    @staticmethod
+    def fuzzy_deduplicate_headless(
+        file_path: str,
+        key_column: str = "A",
+        threshold: float = 0.85,
+        action: str = "flag",
+        start_row: int = 2,
+        sheet_name: Optional[str] = None,
+        output_path: Optional[str] = None
+    ) -> dict:
+        """Detect approximate duplicate rows based on string similarity in a key column."""
+        from difflib import SequenceMatcher
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+        
+        max_r = ws.max_row
+        rows_data = []
+        for r in range(start_row, max_r + 1):
+            val = str(ws[f"{key_column}{r}"].value or "").strip().lower()
+            rows_data.append((r, val))
+            
+        duplicate_pairs = []
+        seen_duplicates = set()
+        for i in range(len(rows_data)):
+            r1, val1 = rows_data[i]
+            if not val1 or r1 in seen_duplicates:
+                continue
+            for j in range(i + 1, len(rows_data)):
+                r2, val2 = rows_data[j]
+                if not val2 or r2 in seen_duplicates:
+                    continue
+                ratio = SequenceMatcher(None, val1, val2).ratio()
+                if ratio >= threshold:
+                    duplicate_pairs.append({"row": r2, "matched_with_row": r1, "score": round(ratio, 3)})
+                    seen_duplicates.add(r2)
+                    
+        if action.lower() == "flag":
+            flag_col = get_column_letter(ws.max_column + 1)
+            ws[f"{flag_col}1"].value = "Fuzzy_Duplicate_Flag"
+            ws[f"{flag_col}1"].font = Font(bold=True)
+            for r in range(start_row, max_r + 1):
+                ws[f"{flag_col}{r}"].value = "DUPLICATE" if r in seen_duplicates else "UNIQUE"
+        elif action.lower() == "remove":
+            for r in sorted(list(seen_duplicates), reverse=True):
+                ws.delete_rows(r)
+                
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return {
+            "file": dest,
+            "total_rows_scanned": len(rows_data),
+            "duplicates_found": len(duplicate_pairs),
+            "matches": duplicate_pairs[:20]
+        }
+
+    @staticmethod
+    def mask_sensitive_data_headless(
+        file_path: str,
+        range_address: str,
+        mask_type: str = "email",
+        mask_char: str = "*",
+        visible_chars: int = 4,
+        sheet_name: Optional[str] = None,
+        output_path: Optional[str] = None
+    ) -> str:
+        """Mask sensitive data like emails, credit cards, or phone numbers in a cell range headlessly."""
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+        
+        cells_to_process = ws[range_address]
+        if not isinstance(cells_to_process, tuple):
+            cells_to_process = ((cells_to_process,),)
+            
+        def _mask_val(text: str) -> str:
+            if not text:
+                return text
+            mt = mask_type.lower()
+            if mt == "email" and "@" in text:
+                user, domain = text.split("@", 1)
+                masked_user = user[0] + (mask_char * max(len(user) - 2, 1)) + (user[-1] if len(user) > 1 else "")
+                return f"{masked_user}@{domain}"
+            elif mt in ("credit_card", "phone", "ssn"):
+                clean_digits = re.sub(r'\D', '', text)
+                if len(clean_digits) > visible_chars:
+                    masked = (mask_char * (len(clean_digits) - visible_chars)) + clean_digits[-visible_chars:]
+                    return masked
+                return mask_char * len(text)
+            else:
+                if len(text) > visible_chars:
+                    return (mask_char * (len(text) - visible_chars)) + text[-visible_chars:]
+                return mask_char * len(text)
+
+        for row in cells_to_process:
+            for cell in (row if isinstance(row, (tuple, list)) else (row,)):
+                if cell.value is not None:
+                    cell.value = _mask_val(str(cell.value))
+                    
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return dest
+
+    @staticmethod
+    def detect_column_types_headless(
+        file_path: str,
+        sheet_name: Optional[str] = None,
+        sample_rows: int = 100
+    ) -> dict:
+        """Infer semantic data types (integer, float, date, boolean, email, text) across columns."""
+        import datetime
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f, data_only=True)
+        ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+        
+        cols_summary = {}
+        max_c = ws.max_column
+        max_r = min(ws.max_row, sample_rows + 1)
+        
+        for c in range(1, max_c + 1):
+            col_letter = get_column_letter(c)
+            header = ws.cell(row=1, column=c).value or f"Col_{col_letter}"
+            types_count = {"integer": 0, "float": 0, "date": 0, "boolean": 0, "email": 0, "text": 0}
+            null_count = 0
+            samples = []
+            
+            for r in range(2, max_r + 1):
+                v = ws.cell(row=r, column=c).value
+                if v is None or v == "":
+                    null_count += 1
+                    continue
+                if len(samples) < 3:
+                    samples.append(str(v))
+                if isinstance(v, bool):
+                    types_count["boolean"] += 1
+                elif isinstance(v, int):
+                    types_count["integer"] += 1
+                elif isinstance(v, float):
+                    types_count["float"] += 1
+                elif isinstance(v, (datetime.date, datetime.datetime)):
+                    types_count["date"] += 1
+                else:
+                    s = str(v).strip()
+                    if re.match(r"^[^@]+@[^@]+\.[^@]+$", s):
+                        types_count["email"] += 1
+                    elif re.match(r"^-?\d+$", s):
+                        types_count["integer"] += 1
+                    elif re.match(r"^-?\d*\.\d+$", s):
+                        types_count["float"] += 1
+                    else:
+                        types_count["text"] += 1
+                        
+            inferred = max(types_count, key=types_count.get) if any(types_count.values()) else "empty"
+            cols_summary[str(header)] = {
+                "column_letter": col_letter,
+                "inferred_type": inferred,
+                "null_count": null_count,
+                "sample_values": samples
+            }
+            
+        return {
+            "sheet": ws.title,
+            "total_columns": max_c,
+            "rows_sampled": max_r - 1,
+            "columns": cols_summary
+        }
 
