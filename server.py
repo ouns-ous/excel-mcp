@@ -3378,6 +3378,162 @@ def excel_detect_column_types_headless(
     )
 
 
+
+
+@mcp.tool()
+def excel_add_amortization_schedule_headless(
+    file_path: str,
+    principal: float,
+    annual_interest_rate: float,
+    term_years: int,
+    start_month: str = "2026-01",
+    sheet_name: str = "Amortization",
+    output_path: Optional[str] = None
+) -> str:
+    """Generate a complete loan amortization schedule table headlessly."""
+    return ExcelEngine.add_amortization_schedule_headless(
+        file_path=file_path,
+        principal=principal,
+        annual_interest_rate=annual_interest_rate,
+        term_years=term_years,
+        start_month=start_month,
+        sheet_name=sheet_name,
+        output_path=output_path
+    )
+
+
+@mcp.tool()
+def excel_add_cagr_analysis_headless(
+    file_path: str,
+    start_value: float,
+    end_value: float,
+    periods: int,
+    output_cell: str = "B2",
+    sheet_name: Optional[str] = None,
+    output_path: Optional[str] = None
+) -> dict:
+    """Calculate Compound Annual Growth Rate (CAGR) and build formatted summary card headlessly."""
+    return ExcelEngine.add_cagr_analysis_headless(
+        file_path=file_path,
+        start_value=start_value,
+        end_value=end_value,
+        periods=periods,
+        output_cell=output_cell,
+        sheet_name=sheet_name,
+        output_path=output_path
+    )
+
+
+@mcp.tool()
+def excel_add_depreciation_schedule_headless(
+    file_path: str,
+    asset_cost: float,
+    salvage_value: float,
+    useful_life_years: int,
+    method: str = "straight_line",
+    sheet_name: str = "Depreciation",
+    output_path: Optional[str] = None
+) -> str:
+    """Generate a complete multi-year asset depreciation schedule table headlessly."""
+    return ExcelEngine.add_depreciation_schedule_headless(
+        file_path=file_path,
+        asset_cost=asset_cost,
+        salvage_value=salvage_value,
+        useful_life_years=useful_life_years,
+        method=method,
+        sheet_name=sheet_name,
+        output_path=output_path
+    )
+
+
+@mcp.tool()
+def excel_generate_correlation_matrix_headless(
+    file_path: str,
+    columns: List[str],
+    start_row: int = 2,
+    end_row: Optional[int] = None,
+    output_cell: str = "G2",
+    sheet_name: Optional[str] = None,
+    output_path: Optional[str] = None
+) -> dict:
+    """Compute Pearson correlation matrix across numerical columns headlessly."""
+    return ExcelEngine.generate_correlation_matrix_headless(
+        file_path=file_path,
+        columns=columns,
+        start_row=start_row,
+        end_row=end_row,
+        output_cell=output_cell,
+        sheet_name=sheet_name,
+        output_path=output_path
+    )
+
+
+@mcp.tool()
+def excel_add_summary_statistics_headless(
+    file_path: str,
+    column: str = "B",
+    start_row: int = 2,
+    end_row: Optional[int] = None,
+    output_cell: str = "D2",
+    sheet_name: Optional[str] = None,
+    output_path: Optional[str] = None
+) -> dict:
+    """Compute comprehensive statistical metrics (Count, Mean, Median, Min, Max, StdDev) headlessly."""
+    return ExcelEngine.add_summary_statistics_headless(
+        file_path=file_path,
+        column=column,
+        start_row=start_row,
+        end_row=end_row,
+        output_cell=output_cell,
+        sheet_name=sheet_name,
+        output_path=output_path
+    )
+
+
+@mcp.tool()
+def excel_calculate_break_even_headless(
+    file_path: str,
+    fixed_costs: float,
+    variable_cost_per_unit: float,
+    price_per_unit: float,
+    target_profit: float = 0.0,
+    output_cell: str = "B2",
+    sheet_name: Optional[str] = None,
+    output_path: Optional[str] = None
+) -> dict:
+    """Compute Break-Even units and revenue, contribution margin, and formatted card headlessly."""
+    return ExcelEngine.calculate_break_even_headless(
+        file_path=file_path,
+        fixed_costs=fixed_costs,
+        variable_cost_per_unit=variable_cost_per_unit,
+        price_per_unit=price_per_unit,
+        target_profit=target_profit,
+        output_cell=output_cell,
+        sheet_name=sheet_name,
+        output_path=output_path
+    )
+
+
+@mcp.tool()
+def excel_add_waterfall_breakdown_headless(
+    file_path: str,
+    categories: List[str],
+    amounts: List[float],
+    output_cell: str = "B2",
+    sheet_name: Optional[str] = None,
+    output_path: Optional[str] = None
+) -> str:
+    """Create structured waterfall breakdown table (Base, Increase, Decrease, Cumulative) headlessly."""
+    return ExcelEngine.add_waterfall_breakdown_headless(
+        file_path=file_path,
+        categories=categories,
+        amounts=amounts,
+        output_cell=output_cell,
+        sheet_name=sheet_name,
+        output_path=output_path
+    )
+
+
 def main():
     """Run the FastMCP server."""
     mcp.run()

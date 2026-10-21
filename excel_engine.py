@@ -905,3 +905,427 @@ class ExcelEngine:
             "columns": cols_summary
         }
 
+    @staticmethod
+    def add_amortization_schedule_headless(
+        file_path: str,
+        principal: float,
+        annual_interest_rate: float,
+        term_years: int,
+        start_month: str = "2026-01",
+        sheet_name: str = "Amortization",
+        output_path: Optional[str] = None
+    ) -> str:
+        """Generate a complete loan amortization schedule table headlessly."""
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        ws = wb.create_sheet(sheet_name) if sheet_name not in wb.sheetnames else wb[sheet_name]
+        
+        headers = ["Period", "Payment Date", "Payment ($)", "Principal ($)", "Interest ($)", "Remaining Balance ($)"]
+        for c_idx, h in enumerate(headers, start=1):
+            cell = ws.cell(row=1, column=c_idx, value=h)
+            cell.font = Font(bold=True, color="FFFFFF", name="Segoe UI")
+            cell.fill = PatternFill(fill_type="solid", start_color="1F4E79", end_color="1F4E79")
+            cell.alignment = Alignment(horizontal="center")
+            
+        r = annual_interest_rate / 12.0
+        n = term_years * 12
+        if r > 0:
+            monthly_payment = principal * (r * (1 + r)**n) / ((1 + r)**n - 1)
+        else:
+            monthly_payment = principal / n
+            
+        balance = principal
+        year, month = map(int, start_month.split("-"))
+        
+        for p in range(1, n + 1):
+            interest = balance * r
+            principal_paid = monthly_payment - interest
+            balance -= principal_paid
+            if balance < 0:
+                balance = 0.0
+                
+            date_str = f"{year}-{month:02d}"
+            row_vals = [p, date_str, round(monthly_payment, 2), round(principal_paid, 2), round(interest, 2), round(balance, 2)]
+            row_idx = p + 1
+            for c_idx, val in enumerate(row_vals, start=1):
+                c = ws.cell(row=row_idx, column=c_idx, value=val)
+                c.font = Font(name="Segoe UI")
+                if c_idx >= 3:
+                    c.number_format = "$#,##0.00"
+                if p % 2 == 0:
+                    c.fill = PatternFill(fill_type="solid", start_color="F2F5F9", end_color="F2F5F9")
+                    
+            month += 1
+            if month > 12:
+                month = 1
+                year += 1
+                
+        for col in ws.columns:
+            col_letter = get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = 18
+            
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return dest
+
+    @staticmethod
+    def add_cagr_analysis_headless(
+        file_path: str,
+        start_value: float,
+        end_value: float,
+        periods: int,
+        output_cell: str = "B2",
+        sheet_name: Optional[str] = None,
+        output_path: Optional[str] = None
+    ) -> dict:
+        """Calculate Compound Annual Growth Rate (CAGR) and build formatted summary card headlessly."""
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+        
+        cagr = (end_value / start_value) ** (1.0 / periods) - 1.0 if start_value > 0 and periods > 0 else 0.0
+        cagr_pct = round(cagr * 100, 2)
+        
+        from openpyxl.utils.cell import coordinate_to_tuple
+        start_r, start_c = coordinate_to_tuple(output_cell)
+        
+        labels = [
+            ("CAGR METRIC ANALYSIS", ""),
+            ("Initial Value", start_value),
+            ("Final Value", end_value),
+            ("Periods (Years)", periods),
+            ("CAGR (%)", f"{cagr_pct}%")
+        ]
+        
+        for idx, (lbl, val) in enumerate(labels):
+            r = start_r + idx
+            c_lbl = ws.cell(row=r, column=start_c, value=lbl)
+            c_val = ws.cell(row=r, column=start_c + 1, value=val)
+            c_lbl.font = Font(bold=True if idx in (0, 4) else False, name="Segoe UI")
+            c_val.font = Font(bold=True if idx == 4 else False, name="Segoe UI")
+            if idx == 0:
+                c_lbl.fill = PatternFill(fill_type="solid", start_color="0D9488", end_color="0D9488")
+                c_lbl.font = Font(bold=True, color="FFFFFF", name="Segoe UI")
+            elif idx == 4:
+                c_val.fill = PatternFill(fill_type="solid", start_color="CCFBF1", end_color="CCFBF1")
+                
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return {
+            "cagr_decimal": round(cagr, 4),
+            "cagr_percent": f"{cagr_pct}%",
+            "start_value": start_value,
+            "end_value": end_value,
+            "periods": periods,
+            "file": dest
+        }
+
+    @staticmethod
+    def add_depreciation_schedule_headless(
+        file_path: str,
+        asset_cost: float,
+        salvage_value: float,
+        useful_life_years: int,
+        method: str = "straight_line",
+        sheet_name: str = "Depreciation",
+        output_path: Optional[str] = None
+    ) -> str:
+        """Generate a complete multi-year asset depreciation schedule table headlessly."""
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        ws = wb.create_sheet(sheet_name) if sheet_name not in wb.sheetnames else wb[sheet_name]
+        
+        headers = ["Year", "Beginning Book Value", "Depreciation Expense", "Accumulated Depreciation", "Ending Book Value"]
+        for c_idx, h in enumerate(headers, start=1):
+            cell = ws.cell(row=1, column=c_idx, value=h)
+            cell.font = Font(bold=True, color="FFFFFF", name="Segoe UI")
+            cell.fill = PatternFill(fill_type="solid", start_color="334155", end_color="334155")
+            cell.alignment = Alignment(horizontal="center")
+            
+        depreciable_base = asset_cost - salvage_value
+        annual_sl = depreciable_base / useful_life_years if useful_life_years > 0 else 0.0
+        
+        beg_val = asset_cost
+        accum = 0.0
+        
+        for yr in range(1, useful_life_years + 1):
+            if method.lower() == "declining_balance":
+                rate = 2.0 / useful_life_years
+                expense = min(beg_val * rate, beg_val - salvage_value)
+            else:
+                expense = annual_sl
+                
+            accum += expense
+            end_val = beg_val - expense
+            row_idx = yr + 1
+            vals = [yr, round(beg_val, 2), round(expense, 2), round(accum, 2), round(end_val, 2)]
+            for c_idx, v in enumerate(vals, start=1):
+                c = ws.cell(row=row_idx, column=c_idx, value=v)
+                c.font = Font(name="Segoe UI")
+                if c_idx >= 2:
+                    c.number_format = "$#,##0.00"
+                if yr % 2 == 0:
+                    c.fill = PatternFill(fill_type="solid", start_color="F8FAFC", end_color="F8FAFC")
+            beg_val = end_val
+            
+        for col in ws.columns:
+            col_letter = get_column_letter(col[0].column)
+            ws.column_dimensions[col_letter].width = 22
+            
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return dest
+
+    @staticmethod
+    def generate_correlation_matrix_headless(
+        file_path: str,
+        columns: List[str],
+        start_row: int = 2,
+        end_row: Optional[int] = None,
+        output_cell: str = "G2",
+        sheet_name: Optional[str] = None,
+        output_path: Optional[str] = None
+    ) -> dict:
+        """Compute Pearson correlation matrix across numerical columns headlessly."""
+        import math
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f, data_only=True)
+        ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+        
+        last_row = end_row or ws.max_row
+        data_series = {}
+        headers = []
+        for col_letter in columns:
+            hdr = str(ws[f"{col_letter}1"].value or col_letter)
+            headers.append(hdr)
+            vals = []
+            for r in range(start_row, last_row + 1):
+                v = ws[f"{col_letter}{r}"].value
+                try:
+                    vals.append(float(v))
+                except (ValueError, TypeError):
+                    vals.append(0.0)
+            data_series[hdr] = vals
+            
+        def _pearson(x, y):
+            n = len(x)
+            if n == 0:
+                return 1.0
+            mx, my = sum(x) / n, sum(y) / n
+            num = sum((a - mx) * (b - my) for a, b in zip(x, y))
+            den = math.sqrt(sum((a - mx)**2 for a in x) * sum((b - my)**2 for b in y))
+            return round(num / den, 3) if den != 0 else 0.0
+
+        matrix = {}
+        for h1 in headers:
+            matrix[h1] = {}
+            for h2 in headers:
+                matrix[h1][h2] = _pearson(data_series[h1], data_series[h2])
+                
+        # Write to sheet
+        from openpyxl.utils.cell import coordinate_to_tuple
+        start_r, start_c = coordinate_to_tuple(output_cell)
+        
+        # Header row
+        for c_idx, h in enumerate(headers, start=start_c + 1):
+            c = ws.cell(row=start_r, column=c_idx, value=h)
+            c.font = Font(bold=True, name="Segoe UI")
+            c.alignment = Alignment(horizontal="center")
+            
+        for r_idx, h1 in enumerate(headers, start=start_r + 1):
+            c_lbl = ws.cell(row=r_idx, column=start_c, value=h1)
+            c_lbl.font = Font(bold=True, name="Segoe UI")
+            for c_idx, h2 in enumerate(headers, start=start_c + 1):
+                val = matrix[h1][h2]
+                cell = ws.cell(row=r_idx, column=c_idx, value=val)
+                cell.font = Font(name="Segoe UI")
+                cell.number_format = "0.00"
+                # Color code
+                if val >= 0.7:
+                    cell.fill = PatternFill(fill_type="solid", start_color="DCFCE7", end_color="DCFCE7")
+                elif val <= -0.7:
+                    cell.fill = PatternFill(fill_type="solid", start_color="FEE2E2", end_color="FEE2E2")
+                    
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return {"correlation_matrix": matrix, "file": dest}
+
+    @staticmethod
+    def add_summary_statistics_headless(
+        file_path: str,
+        column: str = "B",
+        start_row: int = 2,
+        end_row: Optional[int] = None,
+        output_cell: str = "D2",
+        sheet_name: Optional[str] = None,
+        output_path: Optional[str] = None
+    ) -> dict:
+        """Compute comprehensive statistical metrics (Count, Mean, Median, Min, Max, StdDev) headlessly."""
+        import math
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f, data_only=True)
+        ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+        
+        last_row = end_row or ws.max_row
+        vals = []
+        for r in range(start_row, last_row + 1):
+            v = ws[f"{column}{r}"].value
+            try:
+                vals.append(float(v))
+            except (ValueError, TypeError):
+                continue
+                
+        n = len(vals)
+        if n == 0:
+            return {"error": "No numeric data found in column."}
+            
+        vals.sort()
+        mean = sum(vals) / n
+        median = (vals[n//2] if n % 2 != 0 else (vals[n//2 - 1] + vals[n//2]) / 2.0)
+        variance = sum((x - mean)**2 for x in vals) / (n - 1) if n > 1 else 0.0
+        std_dev = math.sqrt(variance)
+        
+        stats = [
+            ("STATISTICAL SUMMARY", f"Column {column}"),
+            ("Count", n),
+            ("Sum", round(sum(vals), 2)),
+            ("Mean (Average)", round(mean, 2)),
+            ("Median", round(median, 2)),
+            ("Minimum", round(vals[0], 2)),
+            ("Maximum", round(vals[-1], 2)),
+            ("Range", round(vals[-1] - vals[0], 2)),
+            ("Std Deviation", round(std_dev, 2)),
+            ("Variance", round(variance, 2))
+        ]
+        
+        from openpyxl.utils.cell import coordinate_to_tuple
+        start_r, start_c = coordinate_to_tuple(output_cell)
+        
+        for idx, (lbl, val) in enumerate(stats):
+            r = start_r + idx
+            c_lbl = ws.cell(row=r, column=start_c, value=lbl)
+            c_val = ws.cell(row=r, column=start_c + 1, value=val)
+            c_lbl.font = Font(bold=True if idx == 0 else False, name="Segoe UI")
+            c_val.font = Font(name="Segoe UI")
+            if idx == 0:
+                c_lbl.fill = PatternFill(fill_type="solid", start_color="4F46E5", end_color="4F46E5")
+                c_lbl.font = Font(bold=True, color="FFFFFF", name="Segoe UI")
+                c_val.fill = PatternFill(fill_type="solid", start_color="4F46E5", end_color="4F46E5")
+                c_val.font = Font(bold=True, color="FFFFFF", name="Segoe UI")
+            elif idx % 2 == 1:
+                c_lbl.fill = PatternFill(fill_type="solid", start_color="F8FAFC", end_color="F8FAFC")
+                c_val.fill = PatternFill(fill_type="solid", start_color="F8FAFC", end_color="F8FAFC")
+                
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return {"statistics": dict(stats[1:]), "file": dest}
+
+    @staticmethod
+    def calculate_break_even_headless(
+        file_path: str,
+        fixed_costs: float,
+        variable_cost_per_unit: float,
+        price_per_unit: float,
+        target_profit: float = 0.0,
+        output_cell: str = "B2",
+        sheet_name: Optional[str] = None,
+        output_path: Optional[str] = None
+    ) -> dict:
+        """Compute Break-Even units and revenue, contribution margin, and formatted card headlessly."""
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+        
+        cm_unit = price_per_unit - variable_cost_per_unit
+        cm_ratio = (cm_unit / price_per_unit) if price_per_unit > 0 else 0.0
+        be_units = ((fixed_costs + target_profit) / cm_unit) if cm_unit > 0 else 0.0
+        be_revenue = be_units * price_per_unit
+        
+        metrics = [
+            ("BREAK-EVEN ANALYSIS", ""),
+            ("Fixed Costs", fixed_costs),
+            ("Unit Selling Price", price_per_unit),
+            ("Unit Variable Cost", variable_cost_per_unit),
+            ("Contribution Margin / Unit", round(cm_unit, 2)),
+            ("Contribution Margin Ratio", f"{round(cm_ratio * 100, 1)}%"),
+            ("Break-Even Volume (Units)", round(be_units, 0)),
+            ("Break-Even Revenue ($)", round(be_revenue, 2))
+        ]
+        
+        from openpyxl.utils.cell import coordinate_to_tuple
+        start_r, start_c = coordinate_to_tuple(output_cell)
+        
+        for idx, (lbl, val) in enumerate(metrics):
+            r = start_r + idx
+            c_lbl = ws.cell(row=r, column=start_c, value=lbl)
+            c_val = ws.cell(row=r, column=start_c + 1, value=val)
+            c_lbl.font = Font(bold=True if idx in (0, 6, 7) else False, name="Segoe UI")
+            c_val.font = Font(bold=True if idx in (6, 7) else False, name="Segoe UI")
+            if idx == 0:
+                c_lbl.fill = PatternFill(fill_type="solid", start_color="EA580C", end_color="EA580C")
+                c_lbl.font = Font(bold=True, color="FFFFFF", name="Segoe UI")
+            elif idx in (6, 7):
+                c_val.fill = PatternFill(fill_type="solid", start_color="FFEDD5", end_color="FFEDD5")
+                
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return {
+            "break_even_units": round(be_units, 0),
+            "break_even_revenue": round(be_revenue, 2),
+            "contribution_margin_unit": round(cm_unit, 2),
+            "contribution_margin_ratio": round(cm_ratio, 3),
+            "file": dest
+        }
+
+    @staticmethod
+    def add_waterfall_breakdown_headless(
+        file_path: str,
+        categories: List[str],
+        amounts: List[float],
+        output_cell: str = "B2",
+        sheet_name: Optional[str] = None,
+        output_path: Optional[str] = None
+    ) -> str:
+        """Create structured waterfall breakdown table (Base, Increase, Decrease, Cumulative) headlessly."""
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+        
+        from openpyxl.utils.cell import coordinate_to_tuple
+        start_r, start_c = coordinate_to_tuple(output_cell)
+        
+        headers = ["Step / Category", "Amount", "Change Type", "Cumulative Balance"]
+        for c_idx, h in enumerate(headers, start=start_c):
+            c = ws.cell(row=start_r, column=c_idx, value=h)
+            c.font = Font(bold=True, color="FFFFFF", name="Segoe UI")
+            c.fill = PatternFill(fill_type="solid", start_color="1E293B", end_color="1E293B")
+            
+        running_total = 0.0
+        for idx, (cat, amt) in enumerate(zip(categories, amounts), start=1):
+            r = start_r + idx
+            running_total += amt
+            change_type = "Starting" if idx == 1 else ("Increase" if amt > 0 else "Decrease")
+            
+            c0 = ws.cell(row=r, column=start_c, value=cat)
+            c1 = ws.cell(row=r, column=start_c + 1, value=amt)
+            c2 = ws.cell(row=r, column=start_c + 2, value=change_type)
+            c3 = ws.cell(row=r, column=start_c + 3, value=round(running_total, 2))
+            
+            c1.number_format = "$#,##0.00"
+            c3.number_format = "$#,##0.00"
+            if amt < 0:
+                c1.font = Font(color="DC2626", bold=True, name="Segoe UI")
+            elif amt > 0 and idx > 1:
+                c1.font = Font(color="16A34A", bold=True, name="Segoe UI")
+                
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return dest
+
