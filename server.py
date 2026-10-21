@@ -3534,6 +3534,98 @@ def excel_add_waterfall_breakdown_headless(
     )
 
 
+
+
+@mcp.tool()
+def excel_append_audit_log_headless(
+    file_path: str,
+    event_message: str,
+    user_name: str = "AI Agent",
+    log_sheet_name: str = "_AuditLog",
+    output_path: Optional[str] = None
+) -> str:
+    """Append an audit trail event log entry to a workbook headlessly."""
+    return ExcelEngine.append_audit_log_headless(
+        file_path=file_path,
+        event_message=event_message,
+        user_name=user_name,
+        log_sheet_name=log_sheet_name,
+        output_path=output_path
+    )
+
+
+@mcp.tool()
+def excel_batch_export_sheets_to_csv_headless(
+    file_path: str,
+    output_dir: Optional[str] = None,
+    delimiter: str = ","
+) -> List[str]:
+    """Export each sheet in an Excel workbook to individual CSV files headlessly."""
+    return ExcelEngine.batch_export_sheets_to_csv_headless(
+        file_path=file_path,
+        output_dir=output_dir,
+        delimiter=delimiter
+    )
+
+
+@mcp.tool()
+def excel_merge_multiple_workbooks_headless(
+    file_paths: List[str],
+    output_path: str,
+    combine_mode: str = "sheets"
+) -> str:
+    """Merge multiple Excel workbooks into one (by adding sheets or stacking rows) headlessly."""
+    return ExcelEngine.merge_multiple_workbooks_headless(
+        file_paths=file_paths,
+        output_path=output_path,
+        combine_mode=combine_mode
+    )
+
+
+@mcp.tool()
+def excel_split_workbook_by_column_headless(
+    file_path: str,
+    split_column: str = "A",
+    output_dir: Optional[str] = None,
+    sheet_name: Optional[str] = None
+) -> List[str]:
+    """Split a worksheet into multiple Excel files partitioned by unique values in a column headlessly."""
+    return ExcelEngine.split_workbook_by_column_headless(
+        file_path=file_path,
+        split_column=split_column,
+        output_dir=output_dir,
+        sheet_name=sheet_name
+    )
+
+
+@mcp.tool()
+def excel_validate_schema_headless(
+    file_path: str,
+    expected_columns: List[str],
+    required_types: Optional[Dict[str, str]] = None,
+    sheet_name: Optional[str] = None
+) -> dict:
+    """Validate worksheet headers and cell types against an expected schema headlessly."""
+    return ExcelEngine.validate_schema_headless(
+        file_path=file_path,
+        expected_columns=expected_columns,
+        required_types=required_types,
+        sheet_name=sheet_name
+    )
+
+
+@mcp.tool()
+def excel_generate_markdown_data_dictionary_headless(
+    file_path: str,
+    sheet_name: Optional[str] = None
+) -> str:
+    """Generate a complete Markdown data dictionary catalog from an Excel worksheet headlessly."""
+    return ExcelEngine.generate_markdown_data_dictionary_headless(
+        file_path=file_path,
+        sheet_name=sheet_name
+    )
+
+
 def main():
     """Run the FastMCP server."""
     mcp.run()

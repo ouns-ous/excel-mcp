@@ -1329,3 +1329,237 @@ class ExcelEngine:
         wb.save(dest)
         return dest
 
+    @staticmethod
+    def append_audit_log_headless(
+        file_path: str,
+        event_message: str,
+        user_name: str = "AI Agent",
+        log_sheet_name: str = "_AuditLog",
+        output_path: Optional[str] = None
+    ) -> str:
+        """Append an audit trail event log entry to a workbook headlessly."""
+        import datetime
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f)
+        
+        if log_sheet_name not in wb.sheetnames:
+            ws = wb.create_sheet(log_sheet_name)
+            headers = ["Log ID", "Timestamp (UTC)", "User / Actor", "Action / Event"]
+            for c_idx, h in enumerate(headers, start=1):
+                c = ws.cell(row=1, column=c_idx, value=h)
+                c.font = Font(bold=True, color="FFFFFF", name="Segoe UI")
+                c.fill = PatternFill(fill_type="solid", start_color="1E293B", end_color="1E293B")
+            ws.column_dimensions["A"].width = 12
+            ws.column_dimensions["B"].width = 24
+            ws.column_dimensions["C"].width = 20
+            ws.column_dimensions["D"].width = 50
+        else:
+            ws = wb[log_sheet_name]
+            
+        next_row = ws.max_row + 1
+        log_id = next_row - 1
+        ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+        
+        vals = [log_id, ts, user_name, event_message]
+        for c_idx, val in enumerate(vals, start=1):
+            c = ws.cell(row=next_row, column=c_idx, value=val)
+            c.font = Font(name="Segoe UI")
+            if next_row % 2 == 1:
+                c.fill = PatternFill(fill_type="solid", start_color="F8FAFC", end_color="F8FAFC")
+                
+        dest = os.path.abspath(output_path) if output_path else f
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        wb.save(dest)
+        return dest
+
+    @staticmethod
+    def batch_export_sheets_to_csv_headless(
+        file_path: str,
+        output_dir: Optional[str] = None,
+        delimiter: str = ","
+    ) -> List[str]:
+        """Export each sheet in an Excel workbook to individual CSV files headlessly."""
+        import csv
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f, data_only=True)
+        base_dir = os.path.abspath(output_dir) if output_dir else os.path.dirname(f)
+        os.makedirs(base_dir, exist_ok=True)
+        base_name = os.path.splitext(os.path.basename(f))[0]
+        
+        exported_files = []
+        for name in wb.sheetnames:
+            ws = wb[name]
+            csv_path = os.path.join(base_dir, f"{base_name}_{name}.csv")
+            with open(csv_path, "w", newline="", encoding="utf-8") as csvfile:
+                writer = csv.writer(csvfile, delimiter=delimiter)
+                for row in ws.iter_rows(values_only=True):
+                    if any(v is not None for v in row):
+                        writer.writerow(["" if v is None else v for v in row])
+            exported_files.append(csv_path)
+        return exported_files
+
+    @staticmethod
+    def merge_multiple_workbooks_headless(
+        file_paths: List[str],
+        output_path: str,
+        combine_mode: str = "sheets"
+    ) -> str:
+        """Merge multiple Excel workbooks into one (by adding sheets or stacking rows) headlessly."""
+        dest = os.path.abspath(output_path)
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        
+        target_wb = openpyxl.Workbook()
+        default_sheet = target_wb.active
+        
+        if combine_mode.lower() == "rows":
+            target_ws = default_sheet
+            target_ws.title = "Merged_Data"
+            header_written = False
+            curr_row = 1
+            for p in file_paths:
+                src_wb = openpyxl.load_workbook(os.path.abspath(p), data_only=True)
+                src_ws = src_wb.active
+                for r_idx, row_vals in enumerate(src_ws.iter_rows(values_only=True), start=1):
+                    if not any(v is not None for v in row_vals):
+                        continue
+                    if r_idx == 1:
+                        if not header_written:
+                            for c_idx, val in enumerate(row_vals, start=1):
+                                c = target_ws.cell(row=curr_row, column=c_idx, value=val)
+                                c.font = Font(bold=True)
+                            curr_row += 1
+                            header_written = True
+                    else:
+                        for c_idx, val in enumerate(row_vals, start=1):
+                            target_ws.cell(row=curr_row, column=c_idx, value=val)
+                        curr_row += 1
+        else:
+            first = True
+            for p in file_paths:
+                src_wb = openpyxl.load_workbook(os.path.abspath(p), data_only=True)
+                base_name = os.path.splitext(os.path.basename(p))[0]
+                for s_name in src_wb.sheetnames:
+                    src_ws = src_wb[s_name]
+                    target_name = s_name if len(file_paths) == 1 else f"{base_name}_{s_name}"[:31]
+                    if first:
+                        target_ws = default_sheet
+                        target_ws.title = target_name
+                        first = False
+                    else:
+                        target_ws = target_wb.create_sheet(title=target_name)
+                    for r_idx, row_vals in enumerate(src_ws.iter_rows(values_only=True), start=1):
+                        for c_idx, val in enumerate(row_vals, start=1):
+                            target_ws.cell(row=r_idx, column=c_idx, value=val)
+                            
+        target_wb.save(dest)
+        return dest
+
+    @staticmethod
+    def split_workbook_by_column_headless(
+        file_path: str,
+        split_column: str = "A",
+        output_dir: Optional[str] = None,
+        sheet_name: Optional[str] = None
+    ) -> List[str]:
+        """Split a worksheet into multiple Excel files partitioned by unique values in a column headlessly."""
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f, data_only=True)
+        ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+        base_dir = os.path.abspath(output_dir) if output_dir else os.path.dirname(f)
+        os.makedirs(base_dir, exist_ok=True)
+        
+        from openpyxl.utils.cell import column_index_from_string
+        col_idx = column_index_from_string(split_column)
+        
+        headers = [c for c in next(ws.iter_rows(min_row=1, max_row=1, values_only=True))]
+        partitions = {}
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            if not any(v is not None for v in row):
+                continue
+            key = str(row[col_idx - 1] if col_idx - 1 < len(row) and row[col_idx - 1] is not None else "Unknown").strip()
+            # Clean key for filesystem
+            clean_key = re.sub(r'[^a-zA-Z0-9_-]', '_', key)
+            if clean_key not in partitions:
+                partitions[clean_key] = []
+            partitions[clean_key].append(row)
+            
+        generated_files = []
+        for key, rows in partitions.items():
+            part_wb = openpyxl.Workbook()
+            part_ws = part_wb.active
+            part_ws.title = key[:31]
+            for c_idx, h in enumerate(headers, start=1):
+                c = part_ws.cell(row=1, column=c_idx, value=h)
+                c.font = Font(bold=True)
+            for r_idx, r_data in enumerate(rows, start=2):
+                for c_idx, val in enumerate(r_data, start=1):
+                    part_ws.cell(row=r_idx, column=c_idx, value=val)
+            part_path = os.path.join(base_dir, f"split_{key}.xlsx")
+            part_wb.save(part_path)
+            generated_files.append(part_path)
+            
+        return generated_files
+
+    @staticmethod
+    def validate_schema_headless(
+        file_path: str,
+        expected_columns: List[str],
+        required_types: Optional[Dict[str, str]] = None,
+        sheet_name: Optional[str] = None
+    ) -> dict:
+        """Validate worksheet headers and cell types against an expected schema headlessly."""
+        f = os.path.abspath(file_path)
+        wb = openpyxl.load_workbook(f, data_only=True)
+        ws = wb[sheet_name] if sheet_name and sheet_name in wb.sheetnames else wb.active
+        
+        actual_headers = [str(c) if c is not None else "" for c in next(ws.iter_rows(min_row=1, max_row=1, values_only=True))]
+        missing_columns = [col for col in expected_columns if col not in actual_headers]
+        
+        type_mismatches = []
+        if required_types:
+            header_to_idx = {h: idx for idx, h in enumerate(actual_headers)}
+            for col_name, expected_t in required_types.items():
+                if col_name in header_to_idx:
+                    c_idx = header_to_idx[col_name]
+                    for r_idx, row in enumerate(ws.iter_rows(min_row=2, max_row=min(ws.max_row, 50), values_only=True), start=2):
+                        val = row[c_idx] if c_idx < len(row) else None
+                        if val is None:
+                            continue
+                        if expected_t.lower() == "number" and not isinstance(val, (int, float)):
+                            try:
+                                float(val)
+                            except ValueError:
+                                type_mismatches.append({"row": r_idx, "column": col_name, "value": str(val), "expected": "number"})
+                                
+        is_valid = len(missing_columns) == 0 and len(type_mismatches) == 0
+        return {
+            "is_valid": is_valid,
+            "actual_columns": actual_headers,
+            "missing_columns": missing_columns,
+            "type_mismatches_sample": type_mismatches[:10],
+            "file": f
+        }
+
+    @staticmethod
+    def generate_markdown_data_dictionary_headless(
+        file_path: str,
+        sheet_name: Optional[str] = None
+    ) -> str:
+        """Generate a complete Markdown data dictionary catalog from an Excel worksheet headlessly."""
+        rep = ExcelEngine.detect_column_types_headless(file_path=file_path, sheet_name=sheet_name)
+        cols = rep.get("columns", {})
+        
+        lines = [
+            f"# Data Dictionary: {rep.get('sheet', 'Sheet')}",
+            f"**File**: `{os.path.basename(file_path)}` | **Sampled Rows**: {rep.get('rows_sampled', 0)}",
+            "",
+            "| Column Letter | Field Name | Inferred Data Type | Null Count | Sample Values |",
+            "| :--- | :--- | :--- | :--- | :--- |"
+        ]
+        
+        for name, info in cols.items():
+            samples = ", ".join([f"`{s}`" for s in info.get("sample_values", [])])
+            lines.append(f"| {info.get('column_letter')} | **{name}** | `{info.get('inferred_type')}` | {info.get('null_count')} | {samples} |")
+            
+        return "\n".join(lines)
+
